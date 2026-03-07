@@ -1,0 +1,1630 @@
+---
+// IndustrialControl.astro
+// Dashboard de Control Industrial — FastAPI Integration
+// Endpoints: /health · /industrial/generar-y-despachar · /industrial/telemetria · /industrial/download-csv
+//            /estaciones/precios-actuales · /analytics/comparativa-norte-pampeano
+
+const API_BASE = import.meta.env.PUBLIC_API_URL ?? "http://localhost:8000";
+---
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+  href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap"
+  rel="stylesheet"
+/>
+
+<div id="ic-root" class="ic-root" data-api={import.meta.env.PUBLIC_API_URL ?? "http://localhost:8000"}>
+
+  <!-- ══════════════════════════════════════════════
+       TOAST CONTAINER
+  ══════════════════════════════════════════════ -->
+  <div id="ic-toast-container" class="ic-toast-container" aria-live="polite"></div>
+
+  <!-- ══════════════════════════════════════════════
+       HEADER — Sistema + Estado de Conexión
+  ══════════════════════════════════════════════ -->
+  <header class="ic-header">
+    <div class="ic-header-left">
+      <div class="ic-logo-mark">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <rect x="1" y="1" width="6" height="6" rx="1" fill="#3b82f6" opacity="0.9"/>
+          <rect x="11" y="1" width="6" height="6" rx="1" fill="#3b82f6" opacity="0.5"/>
+          <rect x="1" y="11" width="6" height="6" rx="1" fill="#3b82f6" opacity="0.5"/>
+          <rect x="11" y="11" width="6" height="6" rx="1" fill="#3b82f6" opacity="0.9"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="ic-title">Panel de Control Industrial</h1>
+        <p class="ic-subtitle">La Pampa · Sistema de Monitoreo en Tiempo Real</p>
+      </div>
+    </div>
+
+    <div class="ic-header-right">
+      <!-- Timestamp -->
+      <span id="ic-timestamp" class="ic-timestamp">--:--:--</span>
+
+      <!-- Health LED -->
+      <div class="ic-health-badge" id="ic-health-badge">
+        <span class="ic-led" id="ic-led"></span>
+        <span class="ic-health-text" id="ic-health-text">Verificando...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════
+       OFFLINE BANNER
+  ══════════════════════════════════════════════ -->
+  <div id="ic-offline-banner" class="ic-offline-banner ic-hidden">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <span>Backend no disponible — Los controles están deshabilitados. Reintentando conexión...</span>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       GRID PRINCIPAL
+  ══════════════════════════════════════════════ -->
+  <div class="ic-grid">
+
+    <!-- ─────────────────────────────────────────
+         PANEL 1 · DESPACHO DE REPORTE
+    ───────────────────────────────────────────── -->
+    <section class="ic-panel ic-panel--dispatch" aria-labelledby="dispatch-heading">
+      <div class="ic-panel-header">
+        <div class="ic-panel-icon ic-panel-icon--blue">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <h2 id="dispatch-heading" class="ic-panel-title">Despacho de Reporte</h2>
+        <span class="ic-panel-badge">POST /industrial/generar-y-despachar</span>
+      </div>
+
+      <form id="ic-dispatch-form" class="ic-form" novalidate>
+
+        <!-- Email -->
+        <div class="ic-field">
+          <label for="ic-email" class="ic-label">
+            Destinatario
+            <span class="ic-label-hint">Correo electrónico</span>
+          </label>
+          <div class="ic-input-wrapper">
+            <svg class="ic-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <input
+              type="email"
+              id="ic-email"
+              name="email"
+              class="ic-input"
+              placeholder="gerencia@empresa.com"
+              required
+              autocomplete="email"
+            />
+          </div>
+        </div>
+
+        <!-- Nombre -->
+        <div class="ic-field">
+          <label for="ic-nombre" class="ic-label">
+            Identificador del reporte
+            <span class="ic-label-hint">Nombre del destinatario</span>
+          </label>
+          <div class="ic-input-wrapper">
+            <svg class="ic-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            <input
+              type="text"
+              id="ic-nombre"
+              name="nombre"
+              class="ic-input"
+              placeholder="Ej: GERENCIA_NORTE"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Slider filas -->
+        <div class="ic-field">
+          <label for="ic-filas" class="ic-label">
+            Volumen de datos
+            <span class="ic-label-hint">Filas a generar</span>
+          </label>
+          <div class="ic-slider-container">
+            <input
+              type="range"
+              id="ic-filas"
+              name="filas"
+              class="ic-slider"
+              min="100"
+              max="1000"
+              step="50"
+              value="500"
+            />
+            <div class="ic-slider-info">
+              <span class="ic-slider-ticks">
+                <span>100</span><span>300</span><span>500</span><span>750</span><span>1000</span>
+              </span>
+              <div class="ic-slider-value-badge">
+                <span id="ic-filas-value">500</span>
+                <span class="ic-slider-unit">filas</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress log -->
+        <div id="ic-progress-log" class="ic-progress-log ic-hidden">
+          <div class="ic-progress-bar-track">
+            <div id="ic-progress-bar" class="ic-progress-bar"></div>
+          </div>
+          <div id="ic-progress-steps" class="ic-progress-steps"></div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" id="ic-dispatch-btn" class="ic-btn ic-btn--primary" disabled>
+          <span id="ic-dispatch-btn-content" class="ic-btn-content">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            Generar y Despachar
+          </span>
+        </button>
+      </form>
+    </section>
+
+    <!-- ─────────────────────────────────────────
+         PANEL 2 · TELEMETRÍA EN VIVO
+    ───────────────────────────────────────────── -->
+    <section class="ic-panel ic-panel--telemetry" aria-labelledby="telemetry-heading">
+      <div class="ic-panel-header">
+        <div class="ic-panel-icon ic-panel-icon--green">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <h2 id="telemetry-heading" class="ic-panel-title">Telemetría en Vivo</h2>
+        <div class="ic-panel-header-right">
+          <div class="ic-pulse-dot" id="ic-telem-pulse"></div>
+          <span class="ic-panel-badge">↻ 5s</span>
+        </div>
+      </div>
+
+      <!-- Last updated -->
+      <p class="ic-telem-updated">
+        Última actualización: <span id="ic-telem-ts">—</span>
+      </p>
+
+      <!-- Table -->
+      <div class="ic-table-wrapper">
+        <table class="ic-table" aria-label="Telemetría industrial en tiempo real">
+          <thead>
+            <tr>
+              <th>Sensor</th>
+              <th>Valor</th>
+              <th>Unidad</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="ic-telem-tbody">
+            <tr class="ic-telem-skeleton">
+              <td colspan="4">
+                <div class="ic-skeleton-row"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────
+         PANEL 3 · PRECIOS ACTUALES
+    ───────────────────────────────────────────── -->
+    <section class="ic-panel ic-panel--prices" aria-labelledby="prices-heading">
+      <div class="ic-panel-header">
+        <div class="ic-panel-icon ic-panel-icon--amber">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <h2 id="prices-heading" class="ic-panel-title">Precios de Combustible</h2>
+        <span class="ic-panel-badge">GET /estaciones/precios-actuales</span>
+      </div>
+
+      <div class="ic-prices-controls">
+        <select id="ic-localidad-select" class="ic-select">
+          <option value="">Todas las localidades</option>
+          <option value="GENERAL PICO">General Pico</option>
+          <option value="REALICO">Realicó</option>
+        </select>
+        <button id="ic-prices-btn" class="ic-btn ic-btn--ghost" disabled>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.54"/>
+          </svg>
+          Actualizar
+        </button>
+      </div>
+
+      <div id="ic-prices-container" class="ic-prices-container">
+        <div class="ic-empty-state">
+          <span>Seleccioná una localidad y actualizá</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────
+         PANEL 4 · COMPARATIVA + DESCARGA
+    ───────────────────────────────────────────── -->
+    <section class="ic-panel ic-panel--analytics" aria-labelledby="analytics-heading">
+      <div class="ic-panel-header">
+        <div class="ic-panel-icon ic-panel-icon--violet">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/>
+            <rect x="2" y="13" width="4" height="8"/>
+          </svg>
+        </div>
+        <h2 id="analytics-heading" class="ic-panel-title">Comparativa Norte Pampeano</h2>
+        <span class="ic-panel-badge">GET /analytics/comparativa</span>
+      </div>
+
+      <div class="ic-analytics-controls">
+        <select id="ic-producto-select" class="ic-select ic-select--sm">
+          <option value="NAFTA SUPER">Nafta Súper</option>
+          <option value="NAFTA PREMIUM">Nafta Premium</option>
+          <option value="GASOIL">Gasoil</option>
+          <option value="GASOIL PREMIUM">Gasoil Premium</option>
+        </select>
+        <button id="ic-analytics-btn" class="ic-btn ic-btn--ghost" disabled>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          Consultar
+        </button>
+      </div>
+
+      <div id="ic-analytics-container" class="ic-analytics-container">
+        <div class="ic-empty-state"><span>Seleccioná un producto para ver la comparativa</span></div>
+      </div>
+
+      <!-- Descarga CSV -->
+      <div class="ic-download-section">
+        <div class="ic-download-info">
+          <p class="ic-download-label">Exportar datos industriales</p>
+          <p class="ic-download-desc">Descarga el CSV con los registros crudos del pipeline</p>
+        </div>
+        <button id="ic-download-btn" class="ic-btn ic-btn--download" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span id="ic-download-label">Descargar CSV</span>
+        </button>
+      </div>
+    </section>
+
+  </div><!-- /ic-grid -->
+</div><!-- /ic-root -->
+
+
+<!-- ══════════════════════════════════════════════
+     STYLES
+══════════════════════════════════════════════ -->
+<style>
+  /* ── Tokens ── */
+  .ic-root {
+    --bg:        #09090b;
+    --surface:   #0f0f12;
+    --surface-2: #141418;
+    --border:    rgba(255,255,255,0.06);
+    --border-2:  rgba(255,255,255,0.10);
+    --blue:      #3b82f6;
+    --blue-dim:  rgba(59,130,246,0.12);
+    --green:     #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --red:       #ef4444;
+    --red-dim:   rgba(239,68,68,0.12);
+    --amber:     #f59e0b;
+    --amber-dim: rgba(245,158,11,0.12);
+    --violet:    #8b5cf6;
+    --violet-dim:rgba(139,92,246,0.12);
+    --text:      #e4e4e7;
+    --muted:     #52525b;
+    --muted-2:   #3f3f46;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --radius:    10px;
+    --panel-pad: 1.4rem;
+  }
+
+  /* ── Root ── */
+  .ic-root {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 1.5rem;
+    font-size: 14px;
+  }
+
+  /* ── Toast ── */
+  .ic-toast-container {
+    position: fixed;
+    top: 1.25rem; right: 1.25rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    pointer-events: none;
+  }
+
+  .ic-toast {
+    pointer-events: all;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    backdrop-filter: blur(12px);
+    max-width: 360px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    animation: toastIn 0.3s cubic-bezier(0.16,1,0.3,1) forwards;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .ic-toast--success { border-color: rgba(34,197,94,0.3); }
+  .ic-toast--error   { border-color: rgba(239,68,68,0.3); }
+  .ic-toast--info    { border-color: rgba(59,130,246,0.3); }
+
+  .ic-toast-icon { flex-shrink: 0; margin-top: 1px; }
+  .ic-toast--success .ic-toast-icon { color: var(--green); }
+  .ic-toast--error   .ic-toast-icon { color: var(--red); }
+  .ic-toast--info    .ic-toast-icon { color: var(--blue); }
+
+  .ic-toast-msg { color: var(--text); }
+  .ic-toast-msg strong { display: block; margin-bottom: 2px; }
+
+  @keyframes toastIn {
+    from { opacity:0; transform: translateX(20px); }
+    to   { opacity:1; transform: translateX(0); }
+  }
+  @keyframes toastOut {
+    to { opacity:0; transform: translateX(20px); }
+  }
+
+  /* ── Header ── */
+  .ic-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ic-header-left { display: flex; align-items: center; gap: 0.85rem; }
+
+  .ic-logo-mark {
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--blue-dim);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .ic-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .ic-subtitle {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    margin: 0;
+    margin-top: 1px;
+  }
+
+  .ic-header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .ic-timestamp {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .ic-health-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-2);
+    background: var(--surface);
+  }
+
+  /* ── LED indicator ── */
+  .ic-led {
+    display: block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted-2);
+    transition: background 0.4s;
+  }
+  .ic-led--online  { background: var(--green); box-shadow: 0 0 6px var(--green); animation: ledPulse 2s ease-in-out infinite; }
+  .ic-led--offline { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+  .ic-led--checking { background: var(--amber); animation: ledBlink 0.8s ease-in-out infinite; }
+
+  @keyframes ledPulse {
+    0%,100% { box-shadow: 0 0 4px var(--green); }
+    50%      { box-shadow: 0 0 10px var(--green); }
+  }
+  @keyframes ledBlink {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.3; }
+  }
+
+  .ic-health-text {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  .ic-health-text--online  { color: var(--green); }
+  .ic-health-text--offline { color: var(--red); }
+
+  /* ── Offline banner ── */
+  .ic-offline-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem 1rem;
+    margin-bottom: 1.25rem;
+    border-radius: var(--radius);
+    background: var(--red-dim);
+    border: 1px solid rgba(239,68,68,0.25);
+    color: #fca5a5;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+  }
+
+  /* ── Grid ── */
+  .ic-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  /* ── Responsive ── */
+
+  /* Tablet: stack grid, shrink padding */
+  @media (max-width: 900px) {
+    .ic-root { padding: 1rem; }
+
+    .ic-grid { grid-template-columns: 1fr; }
+
+    .ic-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .ic-header-right { width: 100%; justify-content: space-between; }
+
+    .ic-analytics-row,
+    .ic-analytics-header {
+      grid-template-columns: 72px 1fr 60px 60px;
+    }
+    /* hide % column on tablet */
+    .ic-analytics-row  > :last-child,
+    .ic-analytics-header > :last-child { display: none; }
+
+    .ic-download-section {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .ic-btn--download { width: 100%; }
+
+    .ic-prices-controls { flex-wrap: wrap; }
+    .ic-select { min-width: 0; }
+  }
+
+  /* Mobile: tighter spacing, hide extras */
+  @media (max-width: 560px) {
+    .ic-root { padding: 0.75rem; }
+
+    .ic-panel { padding: 1rem; }
+
+    .ic-title   { font-size: 0.88rem; }
+    .ic-subtitle { display: none; }
+    .ic-timestamp { display: none; }
+
+    /* panel badge wraps below title */
+    .ic-panel-badge { display: none; }
+
+    /* analytics: only date, locality, price */
+    .ic-analytics-row,
+    .ic-analytics-header {
+      grid-template-columns: 68px 1fr 58px;
+    }
+    .ic-analytics-row  > :nth-child(4),
+    .ic-analytics-row  > :nth-child(5),
+    .ic-analytics-header > :nth-child(4),
+    .ic-analytics-header > :nth-child(5) { display: none; }
+
+    /* table: hide unit column */
+    .ic-table th:nth-child(3),
+    .ic-table td:nth-child(3) { display: none; }
+
+    .ic-slider-ticks { display: none; }
+
+    .ic-analytics-controls { flex-wrap: wrap; }
+    .ic-select--sm { max-width: 100%; width: 100%; }
+    .ic-analytics-controls .ic-btn--ghost { width: 100%; }
+  }
+
+  /* Very small (< 380px) */
+  @media (max-width: 380px) {
+    .ic-logo-mark { display: none; }
+    .ic-health-text { display: none; }
+    .ic-offline-banner span { font-size: 0.72rem; }
+  }
+
+  /* ── Panels ── */
+  .ic-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--panel-pad);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* corner accent */
+  .ic-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle at 0% 0%, rgba(59,130,246,0.07), transparent 70%);
+    pointer-events: none;
+  }
+
+  .ic-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .ic-panel-icon {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .ic-panel-icon--blue   { background: var(--blue-dim);   color: var(--blue); }
+  .ic-panel-icon--green  { background: var(--green-dim);  color: var(--green); }
+  .ic-panel-icon--amber  { background: var(--amber-dim);  color: var(--amber); }
+  .ic-panel-icon--violet { background: var(--violet-dim); color: var(--violet); }
+
+  .ic-panel-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+    flex: 1;
+  }
+
+  .ic-panel-badge {
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+
+  .ic-panel-header-right {
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  .ic-pulse-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted-2);
+  }
+  .ic-pulse-dot--active {
+    background: var(--green);
+    animation: ledPulse 1.5s ease-in-out infinite;
+  }
+
+  /* ── Form ── */
+  .ic-form { display: flex; flex-direction: column; gap: 1rem; }
+
+  .ic-field { display: flex; flex-direction: column; gap: 0.35rem; }
+
+  .ic-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #a1a1aa;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ic-label-hint {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .ic-input-wrapper {
+    position: relative;
+  }
+
+  .ic-input-icon {
+    position: absolute;
+    left: 0.7rem; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .ic-input {
+    width: 100%;
+    padding: 0.55rem 0.8rem 0.55rem 2.1rem;
+    border-radius: 7px;
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    caret-color: var(--blue);
+  }
+  .ic-input::placeholder { color: var(--muted); }
+  .ic-input:focus {
+    border-color: rgba(59,130,246,0.5);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+  }
+  .ic-input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Slider ── */
+  .ic-slider-container { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .ic-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface-2);
+    outline: none;
+    cursor: pointer;
+    border: 1px solid var(--border);
+  }
+  .ic-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--blue);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 6px rgba(59,130,246,0.4);
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+  }
+  .ic-slider:hover::-webkit-slider-thumb {
+    box-shadow: 0 0 12px rgba(59,130,246,0.6);
+  }
+  .ic-slider:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .ic-slider-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ic-slider-ticks {
+    display: flex;
+    gap: 0;
+    justify-content: space-between;
+    width: calc(100% - 60px);
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    color: var(--muted);
+  }
+
+  .ic-slider-value-badge {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    background: var(--blue-dim);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 5px;
+    padding: 0.15rem 0.5rem;
+  }
+  #ic-filas-value {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--blue);
+  }
+  .ic-slider-unit {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    color: var(--muted);
+  }
+
+  /* ── Progress Log ── */
+  .ic-progress-log {
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-2);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ic-progress-bar-track {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .ic-progress-bar {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--blue), #60a5fa);
+    width: 0%;
+    transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .ic-progress-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-height: 80px;
+    overflow-y: auto;
+  }
+
+  .ic-progress-step {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    animation: stepIn 0.3s ease-out forwards;
+  }
+  .ic-progress-step--active { color: var(--blue); }
+  .ic-progress-step--done   { color: var(--green); }
+
+  @keyframes stepIn {
+    from { opacity:0; transform: translateX(-8px); }
+    to   { opacity:1; transform: translateX(0); }
+  }
+
+  /* ── Buttons ── */
+  .ic-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 7px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    outline: none;
+  }
+  .ic-btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+  .ic-btn--primary {
+    padding: 0.6rem 1.1rem;
+    background: var(--blue);
+    color: #fff;
+    width: 100%;
+    box-shadow: 0 2px 12px rgba(59,130,246,0.25);
+  }
+  .ic-btn--primary:hover:not(:disabled) {
+    background: #60a5fa;
+    box-shadow: 0 4px 20px rgba(59,130,246,0.35);
+    transform: translateY(-1px);
+  }
+  .ic-btn--primary:active:not(:disabled) { transform: translateY(0); }
+
+  .ic-btn--ghost {
+    padding: 0.45rem 0.9rem;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border-2);
+  }
+  .ic-btn--ghost:hover:not(:disabled) {
+    border-color: var(--blue);
+    color: var(--blue);
+    background: var(--blue-dim);
+  }
+
+  .ic-btn--download {
+    padding: 0.55rem 1.1rem;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border-2);
+    flex-shrink: 0;
+  }
+  .ic-btn--download:hover:not(:disabled) {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .ic-btn-content { display: flex; align-items: center; gap: 0.4rem; }
+
+  .ic-spinner {
+    width: 13px; height: 13px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Telemetry table ── */
+  .ic-telem-updated {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin: -0.25rem 0 0;
+  }
+
+  .ic-table-wrapper {
+    overflow-x: auto;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+  }
+
+  .ic-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+  }
+
+  .ic-table thead tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ic-table th {
+    padding: 0.5rem 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: left;
+    background: var(--surface-2);
+  }
+
+  .ic-table td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.78rem;
+  }
+  .ic-table tr:last-child td { border-bottom: none; }
+  .ic-table tbody tr { transition: background 0.15s; }
+  .ic-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+  .ic-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+  .ic-badge--nominal { background: var(--green-dim);  color: var(--green); }
+  .ic-badge--alert   { background: var(--red-dim);    color: var(--red); }
+  .ic-badge--warning { background: var(--amber-dim);  color: var(--amber); }
+
+  .ic-badge-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* ── Skeleton ── */
+  .ic-skeleton-row {
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer {
+    to { background-position: -200% 0; }
+  }
+
+  /* ── Prices ── */
+  .ic-prices-controls {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .ic-select {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border-radius: 7px;
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .ic-select:focus { border-color: rgba(59,130,246,0.5); }
+  .ic-select--sm { max-width: 180px; }
+  .ic-select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .ic-prices-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .ic-price-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.75rem;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    transition: border-color 0.2s;
+  }
+  .ic-price-row:hover { border-color: var(--border-2); }
+
+  .ic-price-product {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .ic-price-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .ic-price-locality {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+  }
+  .ic-price-value {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--amber);
+  }
+  .ic-price-bandera {
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    color: var(--muted);
+    padding: 0.1rem 0.35rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+
+  /* ── Analytics ── */
+  .ic-analytics-controls {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .ic-analytics-container {
+    flex: 1;
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .ic-analytics-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 70px 70px 70px;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.45rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+  }
+
+  .ic-analytics-fecha  { color: var(--muted); }
+  .ic-analytics-loc    { color: var(--text); font-weight: 500; }
+  .ic-analytics-precio { color: var(--amber); text-align: right; }
+  .ic-analytics-nom    { text-align: right; }
+  .ic-analytics-pct    { text-align: right; }
+  .ic-positive { color: var(--red); }
+  .ic-negative { color: var(--green); }
+  .ic-neutral  { color: var(--muted); }
+
+  .ic-analytics-header {
+    display: grid;
+    grid-template-columns: 80px 1fr 70px 70px 70px;
+    gap: 0.5rem;
+    padding: 0.3rem 0.65rem;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── Download section ── */
+  .ic-download-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+  }
+
+  .ic-download-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text);
+    margin: 0;
+  }
+  .ic-download-desc {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin: 2px 0 0;
+  }
+
+  /* ── Empty state ── */
+  .ic-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    border-radius: 7px;
+    border: 1px dashed var(--border);
+    text-align: center;
+  }
+
+  /* ── Utilities ── */
+  .ic-hidden { display: none !important; }
+
+  /* Scrollbar */
+  .ic-table-wrapper::-webkit-scrollbar,
+  .ic-prices-container::-webkit-scrollbar,
+  .ic-analytics-container::-webkit-scrollbar,
+  .ic-progress-steps::-webkit-scrollbar { width: 4px; }
+  .ic-table-wrapper::-webkit-scrollbar-track,
+  .ic-prices-container::-webkit-scrollbar-track,
+  .ic-analytics-container::-webkit-scrollbar-track,
+  .ic-progress-steps::-webkit-scrollbar-track { background: transparent; }
+  .ic-table-wrapper::-webkit-scrollbar-thumb,
+  .ic-prices-container::-webkit-scrollbar-thumb,
+  .ic-analytics-container::-webkit-scrollbar-thumb,
+  .ic-progress-steps::-webkit-scrollbar-thumb { background: var(--muted-2); border-radius: 4px; }
+</style>
+
+
+<!-- ══════════════════════════════════════════════
+     SCRIPT
+══════════════════════════════════════════════ -->
+<script>
+  /* ══════════════════════════════════════════════
+     TYPES
+  ══════════════════════════════════════════════ */
+  type ToastType = 'success' | 'error' | 'info';
+
+  interface TelemetryRow {
+    sensor: string;
+    valor:  number;
+    unidad: string;
+    estado: string;
+  }
+
+  interface PrecioRow {
+    producto:  string | null;
+    localidad: string | null;
+    bandera:   string | null;
+    precio:    number | null;
+  }
+
+  interface MetricaRow {
+    fecha:              string | null;
+    localidad:          string | null;
+    precio:             number | null;
+    aumento_nominal:    number | null;
+    aumento_porcentual: number | null;
+  }
+
+  interface DispatchStep { label: string; pct: number; }
+
+  /* ══════════════════════════════════════════════
+     TYPED ELEMENT HELPERS
+     Avoids repeated casting at every call site.
+  ══════════════════════════════════════════════ */
+  function getEl(id: string): HTMLElement | null {
+    return document.getElementById(id);
+  }
+  function getBtn(id: string): HTMLButtonElement | null {
+    return document.getElementById(id) as HTMLButtonElement | null;
+  }
+  function getInput(id: string): HTMLInputElement | null {
+    return document.getElementById(id) as HTMLInputElement | null;
+  }
+  function getSelect(id: string): HTMLSelectElement | null {
+    return document.getElementById(id) as HTMLSelectElement | null;
+  }
+
+  /* ══════════════════════════════════════════════
+     CONFIG
+  ══════════════════════════════════════════════ */
+  const ROOT: HTMLElement | null = document.getElementById('ic-root');
+  const API_BASE: string         = ROOT?.dataset.api ?? 'http://localhost:8000';
+  let backendOnline               = false;
+
+  /* ══════════════════════════════════════════════
+     TOAST
+  ══════════════════════════════════════════════ */
+  const TOAST_ICONS: Record<ToastType, string> = {
+    success: `<svg class="ic-toast-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`,
+    error:   `<svg class="ic-toast-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+    info:    `<svg class="ic-toast-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+  };
+
+  function toast(type: ToastType, title: string, msg?: string): void {
+    const container = getEl('ic-toast-container');
+    if (!container) return;
+
+    const el = document.createElement('div');
+    el.className = `ic-toast ic-toast--${type}`;
+    el.innerHTML = `
+      ${TOAST_ICONS[type]}
+      <div class="ic-toast-msg"><strong>${title}</strong>${msg ?? ''}</div>
+    `;
+    container.appendChild(el);
+
+    setTimeout(() => {
+      el.style.animation = 'toastOut 0.3s ease forwards';
+      setTimeout(() => el.remove(), 300);
+    }, 4500);
+  }
+
+  /* ══════════════════════════════════════════════
+     CONTROLS — enable / disable
+  ══════════════════════════════════════════════ */
+  function setControlsEnabled(enabled: boolean): void {
+    const btnIds:    string[] = ['ic-dispatch-btn', 'ic-prices-btn', 'ic-download-btn', 'ic-analytics-btn'];
+    const inputIds:  string[] = ['ic-email', 'ic-nombre', 'ic-filas'];
+    const selectIds: string[] = ['ic-localidad-select', 'ic-producto-select'];
+
+    btnIds.forEach(id => {
+      const el = getBtn(id);
+      if (el) el.disabled = !enabled;
+    });
+    inputIds.forEach(id => {
+      const el = getInput(id);
+      if (el) el.disabled = !enabled;
+    });
+    selectIds.forEach(id => {
+      const el = getSelect(id);
+      if (el) el.disabled = !enabled;
+    });
+  }
+
+  /* ══════════════════════════════════════════════
+     CLOCK
+  ══════════════════════════════════════════════ */
+  function startClock(): void {
+    const tick = (): void => {
+      const now = new Date();
+      const pad = (n: number): string => String(n).padStart(2, '0');
+      const el  = getEl('ic-timestamp');
+      if (el) el.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    };
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  /* ══════════════════════════════════════════════
+     1. HEALTH CHECK
+  ══════════════════════════════════════════════ */
+  async function checkHealth(): Promise<void> {
+    const led    = getEl('ic-led');
+    const text   = getEl('ic-health-text');
+    const banner = getEl('ic-offline-banner');
+
+    led?.classList.replace(led.classList[1] ?? '', 'ic-led--checking');
+    if (led)  led.className   = 'ic-led ic-led--checking';
+    if (text) { text.textContent = 'Verificando...'; text.className = 'ic-health-text'; }
+
+    try {
+      const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      backendOnline = true;
+      if (led)    led.className  = 'ic-led ic-led--online';
+      if (text) { text.textContent = 'ONLINE'; text.className = 'ic-health-text ic-health-text--online'; }
+      if (banner) banner.classList.add('ic-hidden');
+      setControlsEnabled(true);
+
+    } catch {
+      backendOnline = false;
+      if (led)    led.className  = 'ic-led ic-led--offline';
+      if (text) { text.textContent = 'OFFLINE'; text.className = 'ic-health-text ic-health-text--offline'; }
+      if (banner) banner.classList.remove('ic-hidden');
+      setControlsEnabled(false);
+    }
+  }
+
+  /* ══════════════════════════════════════════════
+     2. DESPACHO DE REPORTE
+  ══════════════════════════════════════════════ */
+  const DISPATCH_STEPS: DispatchStep[] = [
+    { label: 'Iniciando pipeline de datos...', pct: 15 },
+    { label: 'Consultando Polars / DuckDB...',  pct: 35 },
+    { label: 'Generando datasets sintéticos...', pct: 55 },
+    { label: 'Llama 3.1 analizando métricas...', pct: 75 },
+    { label: 'Compilando reporte Excel...',       pct: 90 },
+    { label: 'Despachando por SMTP...',           pct: 100 },
+  ];
+
+  function setDispatchLoading(loading: boolean): void {
+    const btn     = getBtn('ic-dispatch-btn');
+    const content = getEl('ic-dispatch-btn-content');
+    const log     = getEl('ic-progress-log');
+    const steps   = getEl('ic-progress-steps');
+    const bar     = getEl('ic-progress-bar');
+
+    if (!btn || !content || !log) return;
+
+    if (loading) {
+      btn.disabled = true;
+      content.innerHTML = `<span class="ic-spinner"></span> Procesando...`;
+      log.classList.remove('ic-hidden');
+      if (steps) steps.innerHTML = '';
+      if (bar)   bar.style.width = '0%';
+
+      DISPATCH_STEPS.forEach((step: DispatchStep, i: number) => {
+        setTimeout(() => {
+          if (bar) bar.style.width = `${step.pct}%`;
+          if (steps) {
+            const prev = steps.querySelector('.ic-progress-step--active');
+            prev?.classList.replace('ic-progress-step--active', 'ic-progress-step--done');
+            const el = document.createElement('div');
+            el.className = 'ic-progress-step ic-progress-step--active';
+            el.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg> ${step.label}`;
+            steps.appendChild(el);
+            steps.scrollTop = steps.scrollHeight;
+          }
+        }, i * 900);
+      });
+
+    } else {
+      btn.disabled = false;
+      content.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        Generar y Despachar
+      `;
+    }
+  }
+
+  document.getElementById('ic-dispatch-form')?.addEventListener('submit', async (e: Event) => {
+    e.preventDefault();
+    if (!backendOnline) return;
+
+    const email  = getInput('ic-email')?.value.trim()  ?? '';
+    const nombre = getInput('ic-nombre')?.value.trim() ?? '';
+    const filas  = parseInt(getInput('ic-filas')?.value ?? '500', 10);
+
+    if (!email || !nombre) {
+      toast('error', 'Campos incompletos', 'Completá el email y el nombre del reporte.');
+      return;
+    }
+
+    setDispatchLoading(true);
+
+    try {
+      const url = `${API_BASE}/industrial/generar-y-despachar?email=${encodeURIComponent(email)}&nombre=${encodeURIComponent(nombre)}&filas=${filas}`;
+      const res = await fetch(url, { method: 'POST' });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+        throw new Error((errBody as { detail?: string }).detail ?? `Error ${res.status}`);
+      }
+
+      const blob   = await res.blob();
+      const objURL = URL.createObjectURL(blob);
+      const a      = document.createElement('a');
+      a.href       = objURL;
+      a.download   = `${nombre}_sucio.csv`;
+      a.click();
+      URL.revokeObjectURL(objURL);
+
+      toast('success', 'Reporte despachado', `Enviado a ${email}. CSV descargándose.`);
+
+    } catch (err) {
+      toast('error', 'Error en pipeline', err instanceof Error ? err.message : 'Error desconocido.');
+    } finally {
+      setTimeout(() => setDispatchLoading(false), DISPATCH_STEPS.length * 900 + 400);
+    }
+  });
+
+  /* ══════════════════════════════════════════════
+     3. TELEMETRÍA EN VIVO
+  ══════════════════════════════════════════════ */
+  function mockTelemetry(): TelemetryRow[] {
+    const sensors: Array<{ sensor: string; unit: string; base: number; range: number; alert_min: number | null; alert_max: number | null }> = [
+      { sensor: 'TEMP_TANQUE_A',      unit: '°C',    base: 22,  range: 8,   alert_min: null, alert_max: 28  },
+      { sensor: 'PRESION_RED',        unit: 'bar',   base: 4.2, range: 1.5, alert_min: 3.0,  alert_max: 6.0 },
+      { sensor: 'FLUJO_SURTIDOR_1',   unit: 'L/min', base: 38,  range: 12,  alert_min: 20,   alert_max: null },
+      { sensor: 'VOLTAJE_UPS',        unit: 'V',     base: 220, range: 15,  alert_min: 200,  alert_max: 240 },
+      { sensor: 'NIVEL_SUBTERRANEO',  unit: '%',     base: 65,  range: 20,  alert_min: 15,   alert_max: null },
+    ];
+    return sensors.map(s => {
+      const val  = +(s.base + (Math.random() - 0.5) * s.range).toFixed(2);
+      let estado = 'NOMINAL';
+      if ((s.alert_max !== null && val > s.alert_max) || (s.alert_min !== null && val < s.alert_min)) {
+        estado = 'ALERT';
+      } else if (Math.random() < 0.1) {
+        estado = 'WARNING';
+      }
+      return { sensor: s.sensor, valor: val, unidad: s.unit, estado };
+    });
+  }
+
+  function badgeClass(estado: string): string {
+    if (estado === 'ALERT')   return 'ic-badge ic-badge--alert';
+    if (estado === 'WARNING') return 'ic-badge ic-badge--warning';
+    return 'ic-badge ic-badge--nominal';
+  }
+
+  function renderTelemetry(rows: TelemetryRow[]): void {
+    const tbody = getEl('ic-telem-tbody');
+    if (!tbody) return;
+
+    const ts    = getEl('ic-telem-ts');
+    const pulse = getEl('ic-telem-pulse');
+    if (ts)    ts.textContent  = new Date().toLocaleTimeString('es-AR');
+    if (pulse) pulse.className = 'ic-pulse-dot ic-pulse-dot--active';
+
+    tbody.innerHTML = rows.map((r: TelemetryRow) => `
+      <tr>
+        <td><span style="font-family:var(--font-mono);font-size:0.72rem">${r.sensor}</span></td>
+        <td><strong style="font-family:var(--font-mono)">${r.valor}</strong></td>
+        <td><span style="font-family:var(--font-mono);color:var(--muted);font-size:0.7rem">${r.unidad}</span></td>
+        <td><span class="${badgeClass(r.estado)}"><span class="ic-badge-dot"></span>${r.estado}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  async function pollTelemetry(): Promise<void> {
+    try {
+      const res  = await fetch(`${API_BASE}/industrial/telemetria`, { signal: AbortSignal.timeout(4000) });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      renderTelemetry(Array.isArray(data) ? (data as TelemetryRow[]) : ((data as { sensores?: TelemetryRow[] }).sensores ?? []));
+    } catch {
+      renderTelemetry(mockTelemetry());
+    }
+  }
+
+  /* ══════════════════════════════════════════════
+     4. PRECIOS ACTUALES
+  ══════════════════════════════════════════════ */
+  getEl('ic-prices-btn')?.addEventListener('click', async () => {
+    if (!backendOnline) return;
+
+    const btn       = getBtn('ic-prices-btn');
+    const container = getEl('ic-prices-container');
+    const localidad = getSelect('ic-localidad-select')?.value ?? '';
+
+    if (btn) { btn.disabled = true; btn.innerHTML = `<span class="ic-spinner" style="border-top-color:var(--blue)"></span>`; }
+
+    try {
+      const url = localidad
+        ? `${API_BASE}/estaciones/precios-actuales?localidad=${encodeURIComponent(localidad)}`
+        : `${API_BASE}/estaciones/precios-actuales`;
+
+      const res  = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as PrecioRow[];
+
+      if (!container) return;
+      if (!data.length) {
+        container.innerHTML = `<div class="ic-empty-state"><span>Sin datos para la selección actual</span></div>`;
+        return;
+      }
+
+      container.innerHTML = data.slice(0, 20).map((row: PrecioRow) => `
+        <div class="ic-price-row">
+          <span class="ic-price-product">${row.producto ?? '—'}</span>
+          <div class="ic-price-meta">
+            <span class="ic-price-locality">${row.localidad ?? '—'}</span>
+            <span class="ic-price-bandera">${row.bandera ?? '—'}</span>
+            <span class="ic-price-value">$${Number(row.precio ?? 0).toFixed(2)}</span>
+          </div>
+        </div>
+      `).join('');
+
+    } catch (err) {
+      toast('error', 'Error al obtener precios', err instanceof Error ? err.message : 'Falló la consulta.');
+      if (container) container.innerHTML = `<div class="ic-empty-state"><span>Error al cargar datos</span></div>`;
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.54"/>
+          </svg> Actualizar`;
+      }
+    }
+  });
+
+  /* ══════════════════════════════════════════════
+     5. COMPARATIVA NORTE PAMPEANO
+  ══════════════════════════════════════════════ */
+  const pctClass = (v: number | null): string => !v ? 'ic-neutral' : v > 0 ? 'ic-positive' : 'ic-negative';
+  const pctArrow = (v: number | null): string => !v ? '—' : v > 0 ? `▲ ${v}%` : `▼ ${Math.abs(v)}%`;
+
+  getEl('ic-analytics-btn')?.addEventListener('click', async () => {
+    if (!backendOnline) return;
+
+    const btn       = getBtn('ic-analytics-btn');
+    const container = getEl('ic-analytics-container');
+    const producto  = getSelect('ic-producto-select')?.value ?? 'NAFTA SUPER';
+
+    if (btn) { btn.disabled = true; btn.innerHTML = `<span class="ic-spinner" style="border-top-color:var(--blue)"></span>`; }
+
+    try {
+      const res  = await fetch(`${API_BASE}/analytics/comparativa-norte-pampeano?producto=${encodeURIComponent(producto)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const rows = ((data as { metricas?: MetricaRow[] }).metricas ?? []) as MetricaRow[];
+
+      if (!container) return;
+      if (!rows.length) {
+        container.innerHTML = `<div class="ic-empty-state"><span>Sin datos para "${producto}"</span></div>`;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="ic-analytics-header">
+          <span>Fecha</span><span>Localidad</span>
+          <span style="text-align:right">Precio</span>
+          <span style="text-align:right">Δ Nom.</span>
+          <span style="text-align:right">Δ %</span>
+        </div>
+        ${rows.slice(0, 16).map((r: MetricaRow) => `
+          <div class="ic-analytics-row">
+            <span class="ic-analytics-fecha">${r.fecha?.slice(0, 10) ?? '—'}</span>
+            <span class="ic-analytics-loc">${r.localidad ?? '—'}</span>
+            <span class="ic-analytics-precio">$${r.precio ?? '—'}</span>
+            <span class="ic-analytics-nom ${pctClass(r.aumento_nominal)}">
+              ${r.aumento_nominal != null ? (r.aumento_nominal > 0 ? '+' : '') + r.aumento_nominal : '—'}
+            </span>
+            <span class="ic-analytics-pct ${pctClass(r.aumento_porcentual)}">
+              ${pctArrow(r.aumento_porcentual)}
+            </span>
+          </div>
+        `).join('')}
+      `;
+
+    } catch (err) {
+      toast('error', 'Error en analytics', err instanceof Error ? err.message : 'Falló la consulta.');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg> Consultar`;
+      }
+    }
+  });
+
+  /* ══════════════════════════════════════════════
+     6. DESCARGA CSV DIRECTA
+  ══════════════════════════════════════════════ */
+  getEl('ic-download-btn')?.addEventListener('click', async () => {
+    if (!backendOnline) return;
+
+    const btn   = getBtn('ic-download-btn');
+    const label = getEl('ic-download-label');
+
+    if (btn)   btn.disabled    = true;
+    if (label) label.textContent = 'Descargando...';
+
+    try {
+      const res = await fetch(`${API_BASE}/industrial/download-csv`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const blob   = await res.blob();
+      const objURL = URL.createObjectURL(blob);
+      const a      = document.createElement('a');
+      a.href       = objURL;
+      const cd     = res.headers.get('content-disposition') ?? '';
+      const match  = cd.match(/filename="?([^";\n]+)"?/);
+      a.download   = match ? match[1] : 'industrial_export.csv';
+      a.click();
+      URL.revokeObjectURL(objURL);
+      toast('success', 'CSV descargado', 'Guardado en tu carpeta de descargas.');
+
+    } catch (err) {
+      toast('error', 'Error al descargar', err instanceof Error ? err.message : 'Falló la descarga.');
+    } finally {
+      if (btn)   btn.disabled    = false;
+      if (label) label.textContent = 'Descargar CSV';
+    }
+  });
+
+  /* ══════════════════════════════════════════════
+     SLIDER — live value
+  ══════════════════════════════════════════════ */
+  getInput('ic-filas')?.addEventListener('input', (e: Event) => {
+    const val = getEl('ic-filas-value');
+    if (val) val.textContent = (e.target as HTMLInputElement).value;
+  });
+
+  /* ══════════════════════════════════════════════
+     INIT
+  ══════════════════════════════════════════════ */
+  startClock();
+  setControlsEnabled(false);
+  checkHealth().then(() => { if (backendOnline) pollTelemetry(); });
+  setInterval(checkHealth,  30_000);
+  setInterval(() => { if (backendOnline) pollTelemetry(); }, 5_000);
+</script>

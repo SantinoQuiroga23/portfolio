@@ -1,0 +1,19 @@
+---
+// src/layouts/Layout.astro
+interface Props {
+	title: string;
+}
+const { title } = Astro.props;
+import '../styles/global.css'; 
+---
+<!DOCTYPE html>
+<html lang="es" class="dark scroll-smooth">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<title>{title}</title>
+		<link href="https://fonts.googleapis.com/css2?family=Fraunces..." rel="stylesheet"/>
+	</head>
+	<body class="font-body overflow-x-hidden bg-[#080809] text-zinc-100">
+		<slot /> </body>
+</html>
