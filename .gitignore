@@ -7,9 +7,6 @@ __pycache__/
 .env
 backend/.env
 
-# Base de datos local
-backend/data/*.db
-
 # Archivos de sistema
 .DS_Store
 .vscode
