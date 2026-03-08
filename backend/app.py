@@ -21,11 +21,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:4321",
-        "http://127.0.0.1:4321",
-        "https://portfolio-lime-one-29.vercel.app/"
-        "https://portfolio-lime-one-29.vercel.app/",], # El puerto de Astro
+    allow_origin_regex=r"https://portfolio-.*-santinoquiroga23s-projects\.vercel\.app|https://portfolio-lime-one-29\.vercel\.app|http://localhost:4321",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
