@@ -44,7 +44,7 @@ async def obtener_historico(localidad: str = Query(None), bandera: str = Query(N
         params.append(localidad.upper())
     if bandera:
         query += " AND bandera = ?"
-        params.append(bandera.upper())
+        params.append(bandera)
         
     cursor.execute(query, params)
     rows = cursor.fetchall()

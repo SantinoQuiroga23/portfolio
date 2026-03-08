@@ -1,9 +1,10 @@
 ---
 // src/components/dashboard/IcTelemetryPanel.astro
-// Panel de telemetría en vivo — Corrección de legibilidad en el footer.
+// Panel de telemetría en vivo — tabla con polling automático cada 5s.
 ---
 
 <section class="ic-panel ic-panel--telemetry" aria-labelledby="telemetry-heading">
+  <!-- Header -->
   <div class="ic-panel-header">
     <div class="ic-panel-icon ic-panel-icon--green">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -18,12 +19,14 @@
     </div>
   </div>
 
+  <!-- Last updated -->
   <p class="ic-telem-updated">
     Última actualización: <span id="ic-telem-ts">—</span>
   </p>
 
+  <!-- Table -->
   <div class="ic-table-wrapper">
-    <table class="ic-table">
+    <table class="ic-table" aria-label="Telemetría industrial en tiempo real">
       <thead>
         <tr>
           <th>Sensor</th>
@@ -34,81 +37,148 @@
       </thead>
       <tbody id="ic-telem-tbody">
         <tr class="ic-telem-skeleton">
-          <td colspan="4"><div class="ic-skeleton-row"></div></td>
+          <td colspan="4">
+            <div class="ic-skeleton-row"></div>
+          </td>
         </tr>
       </tbody>
     </table>
   </div>
-
   <div class="ic-telemetry-info">
     <div class="ic-info-header">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-      </svg>
-      <span>Protocolo Operativo</span>
+
+  <div class="relative inline-block bg-white/[0.03] border border-blue-500/20 rounded-2xl p-5 max-w-xl">
+    
+    <!-- Label flotante -->
+    <div class="absolute -top-3 left-4 flex items-center gap-1.5 bg-[#080809] px-2">
+      <span class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_rgba(59,130,246,0.8)] animate-pulse"></span>
+      <span class="font-mono text-[0.6rem] tracking-[0.18em] uppercase text-blue-400">
+        Contexto de Operación Real
+      </span>
     </div>
-    <p class="ic-info-description">
-      Sincronización de datos mediante <strong>MQTT / Modbus</strong>. Permite el monitoreo de stock crítico y salud de activos en tiempo real, optimizando la operatividad industrial.
-    </p>
+
+      <!-- Texto -->
+      <p class="m-0 text-sm leading-7 text-zinc-400">
+        Esta tabla simula la recepción de datos vía
+        <strong class="text-zinc-200 font-medium">protocolo MQTT o Modbus</strong>.
+        En una estación de servicio real, estos valores permiten monitorear el stock crítico
+        de tanques y la salud de los surtidores, evitando paradas no programadas y derrames accidentales.
+      </p>
+
   </div>
+</div>
 </section>
 
 <style>
-  /* --- Estilos base del panel (se mantienen) --- */
+  /* ── Shared panel shell ── */
   .ic-panel {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: var(--panel-pad);
     display: flex; flex-direction: column; gap: 1rem;
-    position: relative;
+    position: relative; overflow: hidden;
+  }
+  .ic-panel::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.07), transparent 70%);
+    pointer-events: none;
   }
 
-  .ic-panel-header { display: flex; align-items: center; gap: 0.6rem; }
-  .ic-panel-icon--green { color: var(--green); }
+  /* Panel header */
+  .ic-panel-header {
+    display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  }
+  .ic-panel-icon {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; flex-shrink: 0;
+  }
+  .ic-panel-icon--green { background: var(--green-dim); color: var(--green); }
   .ic-panel-title { font-size: 0.88rem; font-weight: 600; color: var(--text); margin: 0; flex: 1; }
-  .ic-panel-badge { font-family: var(--font-mono); font-size: 0.58rem; color: var(--muted); border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px; }
+  .ic-panel-badge {
+    font-family: var(--font-mono); font-size: 0.58rem; color: var(--muted);
+    letter-spacing: 0.05em; padding: 0.15rem 0.5rem;
+    border-radius: 4px; border: 1px solid var(--border); background: var(--surface-2);
+  }
+  .ic-panel-header-right { display: flex; align-items: center; gap: 0.5rem; }
 
-  .ic-telem-updated { font-family: var(--font-mono); font-size: 0.6rem; color: var(--muted); margin-top: -0.5rem; }
-
-  .ic-table-wrapper { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .ic-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; }
-  .ic-table th { background: var(--surface-2); padding: 0.6rem; color: var(--muted); font-size: 0.6rem; text-transform: uppercase; font-family: var(--font-mono); }
-  .ic-table td { padding: 0.7rem 0.6rem; border-bottom: 1px solid var(--border); color: var(--text); }
-
-  /* --- CORRECCIÓN DE UI: TEXTO INFERIOR --- */
-  .ic-telemetry-info {
-    margin-top: 0.5rem;
-    padding: 0.8rem 1rem;
-    background: rgba(255, 255, 255, 0.02); /* Fondo sutil, no pesado */
-    border-radius: 6px;
-    border-left: 3px solid var(--green); /* Indicador lateral de color */
+  /* Pulse dot */
+  .ic-pulse-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%; background: var(--muted-2);
+  }
+  :global(.ic-pulse-dot--active) {
+    background: var(--green);
+    animation: ledPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes ledPulse {
+    0%, 100% { box-shadow: 0 0 4px var(--green); }
+    50%       { box-shadow: 0 0 10px var(--green); }
   }
 
-  .ic-info-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
-    color: var(--green);
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  /* Last updated */
+  .ic-telem-updated {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    color: var(--muted); margin: -0.25rem 0 0;
   }
 
-  .ic-info-description {
-    font-size: 0.75rem;
-    line-height: 1.5;
-    color: var(--muted); /* Menos brillante que el título para no cansar la vista */
-    margin: 0;
+  /* Table */
+  .ic-table-wrapper {
+    overflow-x: auto; border-radius: 7px; border: 1px solid var(--border);
+  }
+  .ic-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .ic-table thead tr { border-bottom: 1px solid var(--border); }
+  .ic-table th {
+    padding: 0.5rem 0.75rem;
+    font-family: var(--font-mono); font-size: 0.6rem; font-weight: 500;
+    color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase;
+    text-align: left; background: var(--surface-2);
+  }
+  .ic-table td {
+    padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border);
+    color: var(--text); font-size: 0.78rem;
+  }
+  .ic-table tr:last-child td { border-bottom: none; }
+  .ic-table tbody tr { transition: background 0.15s; }
+  .ic-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+  /* Badges — inserted dynamically, needs :global */
+  :global(.ic-badge) {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.15rem 0.5rem; border-radius: 4px;
+    font-family: var(--font-mono); font-size: 0.6rem;
+    font-weight: 600; letter-spacing: 0.06em;
+  }
+  :global(.ic-badge--nominal) { background: var(--green-dim); color: var(--green); }
+  :global(.ic-badge--alert)   { background: var(--red-dim);   color: var(--red); }
+  :global(.ic-badge--warning) { background: var(--amber-dim); color: var(--amber); }
+  :global(.ic-badge-dot) {
+    width: 5px; height: 5px; border-radius: 50%; background: currentColor;
   }
 
-  .ic-info-description strong {
-    color: var(--text); /* Destaca términos técnicos */
-    font-weight: 500;
+  /* Skeleton */
+  .ic-skeleton-row {
+    height: 14px; border-radius: 4px;
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
   }
+  @keyframes shimmer { to { background-position: -200% 0; } }
 
-  /* --- Elementos de estado --- */
-  .ic-pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 5px var(--green); }
+  /* Scrollbar */
+  .ic-table-wrapper::-webkit-scrollbar { width: 4px; }
+  .ic-table-wrapper::-webkit-scrollbar-track { background: transparent; }
+  .ic-table-wrapper::-webkit-scrollbar-thumb { background: var(--muted-2); border-radius: 4px; }
+
+  /* Responsive */
+  @media (max-width: 560px) {
+    .ic-panel       { padding: 1rem; }
+    .ic-panel-badge { display: none; }
+    /* Hide unit column on small screens */
+    .ic-table th:nth-child(3),
+    .ic-table td:nth-child(3) { display: none; }
+  }
 </style>

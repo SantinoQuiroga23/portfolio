@@ -6,7 +6,10 @@
   class="relative min-h-screen flex items-center justify-center overflow-hidden"
   style="background-color:#080809"
 >
-  <!-- Orbs + grid -->
+  <!-- Grid canvas animado -->
+  <canvas id="grid-canvas" class="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true"></canvas>
+
+  <!-- Orbs -->
   <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
     <div class="absolute rounded-full blur-[90px] will-change-transform animate-drift-a
          w-[58vw] h-[58vw] -top-[20%] -left-[18%]
@@ -17,7 +20,6 @@
     <div class="absolute rounded-full blur-[90px] will-change-transform animate-drift-c
          w-[28vw] h-[28vw] top-[40%] left-[55%]
          bg-[radial-gradient(circle,rgba(29,78,216,0.09)_0%,transparent_70%)]"></div>
-    <div class="absolute inset-0 grid-lines"></div>
   </div>
 
   <!-- Content -->
@@ -54,7 +56,7 @@
 
     <!-- Badges -->
     <div class="reveal flex flex-wrap gap-2 justify-center" style="--d:0.42s">
-      {['FastAPI', 'Astro', 'TypeScript', 'PostgreSQL', 'Python'].map(tag => (
+      {['FastAPI', 'React', 'TypeScript', 'PostgreSQL', 'Python'].map(tag => (
         <span
           class="font-mono text-[0.58rem] px-2.5 py-1 rounded-full
                  border border-white/[0.08] text-zinc-500
@@ -67,16 +69,16 @@
 
     <!-- CTAs -->
     <div class="reveal flex flex-wrap gap-3 justify-center" style="--d:0.54s">
-      <a
-        href="#about"
+      
+        <a href="#about"
         class="px-5 sm:px-6 py-2.5 bg-blue-500 hover:bg-blue-400 text-white rounded
                text-xs font-medium tracking-wide transition-all duration-200
                hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(59,130,246,0.35)]"
       >
         Ver perfil
       </a>
-      <a
-        href="#contact"
+      
+      <a href="#contact"
         class="px-5 sm:px-6 py-2.5 border border-white/20 text-zinc-300
                hover:border-blue-400 hover:text-white rounded text-xs font-medium tracking-wide
                transition-all duration-200 hover:-translate-y-0.5"
@@ -97,9 +99,153 @@
   </div>
 </section>
 
+
 <script>
+  // Reveal animations
   document.querySelectorAll<HTMLElement>('.reveal').forEach(el => {
     const d = el.style.getPropertyValue('--d') || '0s';
     el.style.animation = `revealUp 0.85s cubic-bezier(0.16,1,0.3,1) ${d} forwards`;
   });
+
+  // Grid canvas animation
+  (function () {
+    const canvas = document.getElementById('grid-canvas') as HTMLCanvasElement | null;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D | null;
+    if (!ctx) return;
+
+    // A partir de aquí canvas y ctx están garantizados — los capturamos en variables no-nullable
+    const cvs: HTMLCanvasElement = canvas;
+    const c2d: CanvasRenderingContext2D = ctx;
+
+    const CELL = 52;
+    const BASE_ALPHA = 0.045;
+    const PULSE_ALPHA = 0.22;
+    const PULSE_SPEED = 0.012;
+    const PULSE_INTERVAL = 2800;
+
+    interface Pulse { x: number; y: number; r: number; maxR: number; alpha: number; }
+
+    let W: number = 0, H: number = 0, cols: number = 0, rows: number = 0;
+    let pulses: Pulse[] = [];
+    let mouseX = -999, mouseY = -999;
+
+    function resize(): void {
+      W = cvs.width = cvs.offsetWidth;
+      H = cvs.height = cvs.offsetHeight;
+      cols = Math.ceil(W / CELL) + 1;
+      rows = Math.ceil(H / CELL) + 1;
+    }
+
+    function spawnPulse(x: number, y: number): void {
+      const maxR = Math.sqrt(W * W + H * H) * 0.55;
+      pulses.push({ x, y, r: 0, maxR, alpha: PULSE_ALPHA });
+    }
+
+    function autoSpawn(): void {
+      const cx = Math.floor(Math.random() * cols) * CELL;
+      const cy = Math.floor(Math.random() * rows) * CELL;
+      spawnPulse(cx, cy);
+    }
+
+    setInterval(autoSpawn, PULSE_INTERVAL);
+    setTimeout(() => autoSpawn(), 400);
+    setTimeout(() => autoSpawn(), 1600);
+
+    const section = cvs.parentElement;
+    if (section) {
+      section.addEventListener('mousemove', (e: MouseEvent) => {
+        const rect = cvs.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+      });
+      section.addEventListener('mouseleave', () => { mouseX = -999; mouseY = -999; });
+    }
+
+    function draw(): void {
+      c2d.clearRect(0, 0, W, H);
+
+      for (let col = 0; col <= cols; col++) {
+        const x = col * CELL;
+        const grad = c2d.createLinearGradient(x, 0, x, H);
+        grad.addColorStop(0,   `rgba(59,130,246,0)`);
+        grad.addColorStop(0.2, `rgba(59,130,246,${BASE_ALPHA})`);
+        grad.addColorStop(0.8, `rgba(59,130,246,${BASE_ALPHA})`);
+        grad.addColorStop(1,   `rgba(59,130,246,0)`);
+        c2d.beginPath();
+        c2d.moveTo(x, 0);
+        c2d.lineTo(x, H);
+        c2d.strokeStyle = grad;
+        c2d.lineWidth = 0.5;
+        c2d.stroke();
+      }
+
+      for (let row = 0; row <= rows; row++) {
+        const y = row * CELL;
+        const grad = c2d.createLinearGradient(0, y, W, y);
+        grad.addColorStop(0,   `rgba(59,130,246,0)`);
+        grad.addColorStop(0.2, `rgba(59,130,246,${BASE_ALPHA})`);
+        grad.addColorStop(0.8, `rgba(59,130,246,${BASE_ALPHA})`);
+        grad.addColorStop(1,   `rgba(59,130,246,0)`);
+        c2d.beginPath();
+        c2d.moveTo(0, y);
+        c2d.lineTo(W, y);
+        c2d.strokeStyle = grad;
+        c2d.lineWidth = 0.5;
+        c2d.stroke();
+      }
+
+      pulses = pulses.filter((p: Pulse) => p.alpha > 0.002);
+
+      for (const p of pulses) {
+        const ringWidth = CELL * 1.4;
+        const inner = Math.max(0, p.r - ringWidth);
+        const g = c2d.createRadialGradient(p.x, p.y, inner, p.x, p.y, p.r);
+        g.addColorStop(0,   `rgba(96,165,250,0)`);
+        g.addColorStop(0.6, `rgba(96,165,250,${p.alpha * 0.4})`);
+        g.addColorStop(1,   `rgba(59,130,246,${p.alpha})`);
+
+        c2d.beginPath();
+        c2d.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        c2d.strokeStyle = `rgba(59,130,246,${p.alpha})`;
+        c2d.lineWidth = 1;
+        c2d.stroke();
+
+        c2d.beginPath();
+        c2d.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        c2d.fillStyle = g;
+        c2d.fill();
+
+        p.r += CELL * PULSE_SPEED * (1 + p.r / p.maxR * 0.5);
+        p.alpha *= 0.985;
+        if (p.r > p.maxR) p.alpha = 0;
+      }
+
+      if (mouseX > 0) {
+        const GLOW_R = CELL * 2.8;
+        for (let col = 0; col <= cols; col++) {
+          for (let row = 0; row <= rows; row++) {
+            const ix = col * CELL;
+            const iy = row * CELL;
+            const dist = Math.hypot(mouseX - ix, mouseY - iy);
+            if (dist < GLOW_R) {
+              const t = 1 - dist / GLOW_R;
+              const a = t * t * 0.55;
+              c2d.beginPath();
+              c2d.arc(ix, iy, 1.5, 0, Math.PI * 2);
+              c2d.fillStyle = `rgba(147,197,253,${a})`;
+              c2d.fill();
+            }
+          }
+        }
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    resize();
+    draw();
+    window.addEventListener('resize', resize);
+  })();
 </script>

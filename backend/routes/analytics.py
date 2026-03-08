@@ -10,46 +10,58 @@ async def comparativa_ciudades(producto: str = "NAFTA SUPER"):
     if not os.path.exists(DB_PATH):
         raise HTTPException(status_code=404, detail="DB no encontrada")
 
-    conn: Connection = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    cursor: Cursor = conn.cursor()
+    cursor = conn.cursor()
+
     query = """
-    WITH PreciosPromedio AS (
+    WITH DatosLimpios AS (
+        -- Primero normalizamos y agrupamos por fecha para evitar duplicados del mismo día
         SELECT 
             fecha,
-            localidad,
-            AVG(precio) as precio_promedio
+            TRIM(UPPER(localidad)) as localidad_norm,
+            AVG(precio) as precio_diario
         FROM precios_historicos
-        WHERE localidad IN ('REALICO', 'GENERAL PICO') 
-          AND producto LIKE ?
-        GROUP BY fecha, localidad
+        WHERE localidad_norm IN ('REALICO', 'GENERAL PICO') 
+        AND UPPER(producto) LIKE UPPER(?)
+        GROUP BY fecha, localidad_norm
+    ),
+    Calculos AS (
+        -- Ahora calculamos el LAG sobre datos ya promediados por día
+        SELECT 
+            fecha,
+            localidad_norm as localidad,
+            ROUND(precio_diario, 2) as precio,
+            LAG(precio_diario) OVER (
+                PARTITION BY localidad_norm 
+                ORDER BY fecha ASC -- El LAG siempre debe mirar hacia atrás en el tiempo
+            ) as precio_anterior
+        FROM DatosLimpios
     )
     SELECT 
         fecha,
         localidad,
-        ROUND(precio_promedio, 2) as precio,
-        ROUND(
-            precio_promedio - LAG(precio_promedio) OVER (PARTITION BY localidad ORDER BY fecha), 
-            2
-        ) as aumento_nominal,
-        ROUND(
-            ((precio_promedio - LAG(precio_promedio) OVER (PARTITION BY localidad ORDER BY fecha)) / 
-            LAG(precio_promedio) OVER (PARTITION BY localidad ORDER BY fecha)) * 100, 
-            2
-        ) as aumento_porcentual
-    FROM PreciosPromedio
-    ORDER BY fecha DESC, localidad ASC
+        precio,
+        -- Si no hay precio anterior (primer registro), el aumento es 0
+        COALESCE(ROUND(precio - precio_anterior, 2), 0) as aumento_nominal,
+        COALESCE(ROUND(((precio - precio_anterior) / precio_anterior) * 100, 2), 0) as aumento_porcentual
+    FROM Calculos
+    ORDER BY fecha DESC, localidad ASC -- Presentamos lo más nuevo arriba
     """
     
     try:
-        cursor.execute(query, (f"%{producto.upper()}%",))
-        rows: list[Any] = cursor.fetchall()
+        cursor.execute(query, (f"%{producto}%",))
+        rows = cursor.fetchall()
         
-        resultado = [dict(row) for row in rows]
+        metricas = [dict(row) for row in rows]
+        
         return {
-            "producto": producto.upper(),
-            "metricas": resultado,
-            "count": len(resultado)
+            "query_info": {
+                "producto_buscado": producto,
+                "total_registros": len(metricas),
+                "localidades_incluidas": ["REALICO", "GENERAL PICO"]
+            },
+            "metricas": metricas
         }
     finally:
         conn.close()
