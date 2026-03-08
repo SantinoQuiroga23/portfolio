@@ -1,0 +1,32 @@
+---
+/**
+ * Dashboard section — wraps IndustrialControl.
+ * IndustrialControl.astro handles its own styles and script.
+ */
+import IndustrialControl from './IndustrialControl.astro';
+---
+
+<section id="dashboard" class="border-t border-white/[0.06]">
+
+  <!-- Eyebrow -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-28 pb-8">
+    <div class="section-eyebrow mb-6">
+      <span class="font-mono text-[0.63rem] text-blue-500 tracking-[0.1em]">03</span>
+      <span class="w-10 h-px bg-white/[0.08]"></span>
+      <span class="font-mono text-[0.63rem] uppercase tracking-[0.22em] text-zinc-400">Panel Industrial</span>
+    </div>
+
+    <h2 class="font-display text-[clamp(1.75rem,3.5vw,2.9rem)] font-bold leading-[1.12] tracking-tight text-zinc-100 mb-3">
+      Dashboard de Control
+    </h2>
+    <p class="text-zinc-500 text-sm max-w-xl leading-relaxed">
+      Demo en vivo: monitoreo de telemetría, despacho de reportes por email y análisis
+      comparativo de precios de combustible en el Norte Pampeano.
+      Conectá tu backend FastAPI en <code class="font-mono text-blue-400 text-[0.78rem]">PUBLIC_API_URL</code>.
+    </p>
+  </div>
+
+  <!-- Component -->
+  <IndustrialControl />
+
+</section>

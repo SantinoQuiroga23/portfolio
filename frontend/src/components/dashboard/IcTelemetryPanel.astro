@@ -1,0 +1,114 @@
+---
+// src/components/dashboard/IcTelemetryPanel.astro
+// Panel de telemetría en vivo — Corrección de legibilidad en el footer.
+---
+
+<section class="ic-panel ic-panel--telemetry" aria-labelledby="telemetry-heading">
+  <div class="ic-panel-header">
+    <div class="ic-panel-icon ic-panel-icon--green">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <h2 id="telemetry-heading" class="ic-panel-title">Telemetría en Vivo</h2>
+    <div class="ic-panel-header-right">
+      <div class="ic-pulse-dot" id="ic-telem-pulse"></div>
+      <span class="ic-panel-badge">↻ 5s</span>
+    </div>
+  </div>
+
+  <p class="ic-telem-updated">
+    Última actualización: <span id="ic-telem-ts">—</span>
+  </p>
+
+  <div class="ic-table-wrapper">
+    <table class="ic-table">
+      <thead>
+        <tr>
+          <th>Sensor</th>
+          <th>Valor</th>
+          <th>Unidad</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="ic-telem-tbody">
+        <tr class="ic-telem-skeleton">
+          <td colspan="4"><div class="ic-skeleton-row"></div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ic-telemetry-info">
+    <div class="ic-info-header">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <span>Protocolo Operativo</span>
+    </div>
+    <p class="ic-info-description">
+      Sincronización de datos mediante <strong>MQTT / Modbus</strong>. Permite el monitoreo de stock crítico y salud de activos en tiempo real, optimizando la operatividad industrial.
+    </p>
+  </div>
+</section>
+
+<style>
+  /* --- Estilos base del panel (se mantienen) --- */
+  .ic-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--panel-pad);
+    display: flex; flex-direction: column; gap: 1rem;
+    position: relative;
+  }
+
+  .ic-panel-header { display: flex; align-items: center; gap: 0.6rem; }
+  .ic-panel-icon--green { color: var(--green); }
+  .ic-panel-title { font-size: 0.88rem; font-weight: 600; color: var(--text); margin: 0; flex: 1; }
+  .ic-panel-badge { font-family: var(--font-mono); font-size: 0.58rem; color: var(--muted); border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px; }
+
+  .ic-telem-updated { font-family: var(--font-mono); font-size: 0.6rem; color: var(--muted); margin-top: -0.5rem; }
+
+  .ic-table-wrapper { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .ic-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; }
+  .ic-table th { background: var(--surface-2); padding: 0.6rem; color: var(--muted); font-size: 0.6rem; text-transform: uppercase; font-family: var(--font-mono); }
+  .ic-table td { padding: 0.7rem 0.6rem; border-bottom: 1px solid var(--border); color: var(--text); }
+
+  /* --- CORRECCIÓN DE UI: TEXTO INFERIOR --- */
+  .ic-telemetry-info {
+    margin-top: 0.5rem;
+    padding: 0.8rem 1rem;
+    background: rgba(255, 255, 255, 0.02); /* Fondo sutil, no pesado */
+    border-radius: 6px;
+    border-left: 3px solid var(--green); /* Indicador lateral de color */
+  }
+
+  .ic-info-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    color: var(--green);
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .ic-info-description {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--muted); /* Menos brillante que el título para no cansar la vista */
+    margin: 0;
+  }
+
+  .ic-info-description strong {
+    color: var(--text); /* Destaca términos técnicos */
+    font-weight: 500;
+  }
+
+  /* --- Elementos de estado --- */
+  .ic-pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 5px var(--green); }
+</style>

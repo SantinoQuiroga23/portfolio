@@ -12,3 +12,4 @@ backend/data/*.db
 
 # Archivos de sistema
 .DS_Store
+.vscode

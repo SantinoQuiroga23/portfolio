@@ -1,0 +1,435 @@
+---
+// src/components/dashboard/IcDispatchPanel.astro
+// Panel de despacho de reportes — validación de email + alerta de carga (amber).
+---
+
+<section class="ic-panel ic-panel--dispatch" aria-labelledby="dispatch-heading">
+
+  <!-- ── Header ── -->
+  <div class="ic-panel-header">
+    <div class="ic-panel-icon ic-panel-icon--blue">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <h2 id="dispatch-heading" class="ic-panel-title">Despacho de Reporte</h2>
+    <span class="ic-panel-badge">POST /api/v1/industrial/generar-y-despachar</span>
+  </div>
+
+  <!-- ── Form ── -->
+  <form id="ic-dispatch-form" class="ic-form" novalidate>
+
+    <!-- Email -->
+    <div class="ic-field" id="ic-field-email">
+      <label for="ic-email" class="ic-label">
+        <span class="ic-label-text">Destinatario</span>
+        <span id="ic-email-hint" class="ic-label-hint">Correo electrónico</span>
+      </label>
+      <div class="ic-input-wrapper">
+        <svg class="ic-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+        <input
+          type="email"
+          id="ic-email"
+          name="email"
+          class="ic-input"
+          placeholder="gerencia@empresa.com"
+          required
+          autocomplete="email"
+        />
+      </div>
+    </div>
+
+    <!-- Nombre -->
+    <div class="ic-field">
+      <label for="ic-nombre" class="ic-label">
+        <span class="ic-label-text">Identificador</span>
+        <span class="ic-label-hint">Nombre del reporte</span>
+      </label>
+      <div class="ic-input-wrapper">
+        <svg class="ic-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <input
+          type="text"
+          id="ic-nombre"
+          name="nombre"
+          class="ic-input"
+          placeholder="Ej: GERENCIA_PAMPA_NORTE"
+          required
+        />
+      </div>
+    </div>
+
+    <!-- Slider filas -->
+    <div class="ic-field">
+      <div class="ic-label">
+        <span class="ic-label-text">Volumen de datos</span>
+        <span class="ic-label-hint">Filas a generar</span>
+      </div>
+
+      <div class="ic-slider-container">
+        <input
+          type="range"
+          id="ic-filas"
+          name="filas"
+          class="ic-slider"
+          min="100"
+          max="1000"
+          step="50"
+          value="500"
+          style="--pct: 44.4%"
+        />
+        <div class="ic-slider-ticks">
+          <span>100</span><span>250</span><span>500</span><span>750</span><span>1000</span>
+        </div>
+
+        <!-- Readout card -->
+        <div id="ic-slider-box" class="ic-slider-readout">
+          <div class="ic-slider-readout-left">
+            <span id="ic-filas-value" class="ic-readout-num">500</span>
+            <span class="ic-readout-unit">FILAS</span>
+          </div>
+          <div class="ic-slider-readout-right">
+            <span id="ic-slider-status" class="ic-readout-status">Carga balanceada</span>
+            <svg id="ic-load-icon" class="ic-load-icon ic-load-icon--hidden"
+              width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress log -->
+    <div id="ic-progress-log" class="ic-progress-log ic-hidden">
+      <div class="ic-progress-bar-track">
+        <div id="ic-progress-bar" class="ic-progress-bar"></div>
+      </div>
+      <div id="ic-progress-steps" class="ic-progress-steps"></div>
+    </div>
+
+    <!-- Submit -->
+    <button type="submit" id="ic-dispatch-btn" class="ic-btn ic-btn--primary" disabled>
+      <span id="ic-dispatch-btn-content" class="ic-btn-content">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        Generar y Despachar
+      </span>
+    </button>
+
+  </form>
+</section>
+
+<script>
+  /* ── Slider — fill track + high-load warning ── */
+  const inputFilas   = document.getElementById('ic-filas')          as HTMLInputElement | null;
+  const displayFilas = document.getElementById('ic-filas-value');
+  const statusFilas  = document.getElementById('ic-slider-status');
+  const sliderBox    = document.getElementById('ic-slider-box');
+  const loadIcon     = document.getElementById('ic-load-icon');
+  const btnSubmit    = document.getElementById('ic-dispatch-btn')   as HTMLButtonElement | null;
+
+  function updateSlider(val: number): void {
+    if (displayFilas) displayFilas.textContent = val.toString();
+
+    // Drive the two-tone fill via CSS custom property
+    const pct = ((val - 100) / (1000 - 100)) * 100;
+    inputFilas?.style.setProperty('--pct', `${pct.toFixed(1)}%`);
+
+    const isHeavy = val >= 800;
+    const isFast  = val < 300;
+
+    if (statusFilas) {
+      statusFilas.textContent = isHeavy ? 'Alta carga — puede demorar'
+                               : isFast  ? 'Simulación rápida'
+                               : 'Carga balanceada';
+    }
+
+    sliderBox?.classList.toggle('ic-slider-readout--warn', isHeavy);
+    loadIcon?.classList.toggle('ic-load-icon--hidden',     !isHeavy);
+    btnSubmit?.classList.toggle('ic-btn--warn',            isHeavy);
+  }
+
+  inputFilas?.addEventListener('input', (e) => {
+    updateSlider(parseInt((e.target as HTMLInputElement).value));
+  });
+  updateSlider(500);
+
+  /* ── Email — realtime validation ── */
+  const inputEmail = document.getElementById('ic-email')      as HTMLInputElement | null;
+  const emailHint  = document.getElementById('ic-email-hint');
+  const fieldEmail = document.getElementById('ic-field-email');
+
+  inputEmail?.addEventListener('input', () => {
+    const isEmpty = inputEmail.value === '';
+    const isValid = isEmpty || inputEmail.checkValidity();
+
+    inputEmail.classList.toggle('ic-input--error',  !isValid);
+    fieldEmail?.classList.toggle('ic-field--error', !isValid);
+    if (emailHint) emailHint.textContent = isValid ? 'Correo electrónico' : 'Formato inválido';
+  });
+</script>
+
+<style>
+  /* ── Panel shell ── */
+  .ic-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--panel-pad);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Corner accent glow */
+  .ic-panel::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 80px; height: 80px;
+    background: radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.09), transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── Panel header ── */
+  .ic-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .ic-panel-icon {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; flex-shrink: 0;
+  }
+  .ic-panel-icon--blue { background: var(--blue-dim); color: var(--blue); }
+  .ic-panel-title {
+    font-size: 0.88rem; font-weight: 600; color: var(--text); margin: 0; flex: 1;
+  }
+  .ic-panel-badge {
+    font-family: var(--font-mono); font-size: 0.55rem; color: var(--muted);
+    letter-spacing: 0.04em; padding: 0.15rem 0.5rem;
+    border-radius: 4px; border: 1px solid var(--border); background: var(--surface-2);
+  }
+
+  /* ── Form ── */
+  .ic-form  { display: flex; flex-direction: column; gap: 1.1rem; }
+  .ic-field { display: flex; flex-direction: column; gap: 0.4rem; }
+
+  /* ── Label ── */
+  .ic-label {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.75rem; font-weight: 500; color: #a1a1aa;
+  }
+  .ic-label-hint {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    color: var(--muted); transition: color 0.2s;
+  }
+  /* Error: hint turns red */
+  .ic-field--error .ic-label-hint { color: var(--red); }
+
+  /* ── Input ── */
+  .ic-input-wrapper { position: relative; }
+  .ic-input-icon {
+    position: absolute; left: 0.72rem; top: 50%;
+    transform: translateY(-50%); color: var(--muted);
+    pointer-events: none; transition: color 0.2s;
+  }
+  .ic-input {
+    width: 100%;
+    padding: 0.58rem 0.8rem 0.58rem 2.15rem;
+    border-radius: 7px; border: 1px solid var(--border-2);
+    background: var(--surface-2); color: var(--text);
+    font-family: var(--font-body); font-size: 0.82rem;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    caret-color: var(--blue);
+  }
+  .ic-input::placeholder { color: var(--muted); }
+  .ic-input:focus {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  .ic-input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Error state — red ring */
+  .ic-input--error {
+    border-color: rgba(239, 68, 68, 0.55) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08) !important;
+  }
+  .ic-field--error .ic-input-icon { color: var(--red); }
+
+  /* ── Slider ── */
+  .ic-slider-container { display: flex; flex-direction: column; gap: 0.45rem; }
+
+  .ic-slider {
+    -webkit-appearance: none;
+    width: 100%; height: 4px; border-radius: 99px;
+    /* Two-tone fill driven by --pct custom property */
+    background: linear-gradient(
+      to right,
+      var(--blue)     0%,
+      var(--blue)     var(--pct, 44.4%),
+      var(--border-2) var(--pct, 44.4%),
+      var(--border-2) 100%
+    );
+    outline: none; cursor: pointer;
+  }
+  .ic-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--blue);
+    border: 2.5px solid var(--bg);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4), 0 2px 8px rgba(0, 0, 0, 0.35);
+    cursor: pointer; transition: box-shadow 0.15s, transform 0.1s;
+  }
+  .ic-slider:hover::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25), 0 2px 8px rgba(0, 0, 0, 0.35);
+    transform: scale(1.1);
+  }
+  .ic-slider:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .ic-slider-ticks {
+    display: flex; justify-content: space-between; padding: 0 2px;
+    font-family: var(--font-mono); font-size: 0.54rem; color: var(--muted);
+  }
+
+  /* ── Slider readout card ── */
+  .ic-slider-readout {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 0.75rem; gap: 0.5rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    transition: border-color 0.25s, background 0.25s;
+  }
+  /* High-load: subtle amber tint — no aggressive full-color takeover */
+  .ic-slider-readout--warn {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.05);
+  }
+
+  .ic-slider-readout-left  { display: flex; align-items: baseline; gap: 5px; }
+  .ic-slider-readout-right { display: flex; align-items: center; gap: 0.4rem; }
+
+  .ic-readout-num {
+    font-family: var(--font-mono); font-size: 1.05rem; font-weight: 700;
+    color: var(--blue); line-height: 1; transition: color 0.25s;
+  }
+  .ic-slider-readout--warn .ic-readout-num { color: var(--amber); }
+
+  .ic-readout-unit {
+    font-family: var(--font-mono); font-size: 0.5rem;
+    font-weight: 600; color: var(--muted); letter-spacing: 0.08em;
+  }
+
+  .ic-readout-status {
+    font-size: 0.65rem; color: var(--muted); font-style: italic;
+    text-align: right; transition: color 0.25s;
+  }
+  .ic-slider-readout--warn .ic-readout-status {
+    color: var(--amber); font-style: normal;
+  }
+
+  /* Warning triangle */
+  .ic-load-icon { color: var(--amber); flex-shrink: 0; transition: opacity 0.2s, transform 0.2s; }
+  .ic-load-icon--hidden { opacity: 0; transform: scale(0.6); pointer-events: none; }
+
+  /* ── Progress log ── */
+  .ic-progress-log {
+    border: 1px solid var(--border); border-radius: 7px;
+    background: var(--surface-2); padding: 0.7rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .ic-progress-bar-track {
+    height: 3px; border-radius: 2px;
+    background: rgba(255, 255, 255, 0.05); overflow: hidden;
+  }
+  .ic-progress-bar {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, var(--blue), #60a5fa);
+    width: 0%; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .ic-progress-steps {
+    display: flex; flex-direction: column; gap: 0.25rem;
+    max-height: 80px; overflow-y: auto;
+  }
+  :global(.ic-progress-step) {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-family: var(--font-mono); font-size: 0.64rem; color: var(--muted);
+    animation: stepIn 0.3s ease-out forwards;
+  }
+  :global(.ic-progress-step--active) { color: var(--blue); }
+  :global(.ic-progress-step--done)   { color: var(--green); }
+  @keyframes stepIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .ic-progress-steps::-webkit-scrollbar       { width: 3px; }
+  .ic-progress-steps::-webkit-scrollbar-track { background: transparent; }
+  .ic-progress-steps::-webkit-scrollbar-thumb { background: var(--muted-2); border-radius: 2px; }
+
+  /* ── Button ── */
+  .ic-btn {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.65rem; border-radius: 7px; border: none; width: 100%;
+    font-family: var(--font-body); font-weight: 600; font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow  0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                transform   0.15s;
+  }
+  .ic-btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+  .ic-btn--primary {
+    background: var(--blue); color: #fff;
+    box-shadow: 0 2px 12px rgba(59, 130, 246, 0.28);
+  }
+  .ic-btn--primary:hover:not(:disabled) {
+    background: #60a5fa;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.38);
+    transform: translateY(-1px);
+  }
+  .ic-btn--primary:active:not(:disabled) { transform: translateY(0); }
+
+  /* Warning: amber takeover with smooth transition */
+  .ic-btn--warn {
+    background: var(--amber) !important;
+    box-shadow: 0 2px 12px rgba(245, 158, 11, 0.28) !important;
+  }
+  .ic-btn--warn:hover:not(:disabled) {
+    background: #fbbf24 !important;
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.38) !important;
+    transform: translateY(-1px);
+  }
+
+  .ic-btn-content { display: flex; align-items: center; gap: 0.4rem; }
+
+  :global(.ic-spinner) {
+    width: 13px; height: 13px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Utility ── */
+  .ic-hidden { display: none !important; }
+
+  /* ── Responsive ── */
+  @media (max-width: 560px) {
+    .ic-panel       { padding: 1rem; }
+    .ic-panel-badge { display: none; }
+    .ic-slider-ticks { display: none; }
+  }
+</style>

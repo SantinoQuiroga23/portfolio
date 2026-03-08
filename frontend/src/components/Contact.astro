@@ -1,0 +1,111 @@
+---
+const contacts = [
+  {
+    href:    'mailto:santino@example.com',
+    label:   'Email',
+    value:   'santino@example.com',
+    color:   'blue',
+    hoverBorder: 'hover:border-blue-500/40',
+    bg:      'bg-blue-500/10',
+    text:    'text-blue-500',
+    icon: `<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+           <polyline points="22,6 12,13 2,6"/>`,
+  },
+  {
+    href:    'tel:+5491112345678',
+    label:   'Teléfono',
+    value:   '+54 9 11 1234-5678',
+    hoverBorder: 'hover:border-emerald-500/40',
+    bg:      'bg-emerald-500/10',
+    text:    'text-emerald-500',
+    icon: `<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12
+           19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81
+           a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45
+           c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/>`,
+    target: undefined,
+  },
+  {
+    href:    'https://instagram.com/santinoquiroga',
+    label:   'Instagram',
+    value:   '@santinoquiroga',
+    hoverBorder: 'hover:border-pink-500/40',
+    bg:      'bg-pink-500/10',
+    text:    'text-pink-500',
+    icon: `<rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+           <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+           <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>`,
+    target: '_blank',
+  },
+  {
+    href:    'https://linkedin.com/in/santinoquiroga',
+    label:   'LinkedIn',
+    value:   'Santino Quiroga',
+    hoverBorder: 'hover:border-blue-500/40',
+    bg:      'bg-blue-500/10',
+    text:    'text-blue-500',
+    icon: `<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/>
+           <rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>`,
+    target:  '_blank',
+    fill:    true,
+  },
+];
+---
+
+<section id="contact" class="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-28 border-t border-white/[0.06]">
+
+  <!-- Eyebrow -->
+  <div class="section-eyebrow mb-10 sm:mb-14">
+    <span class="font-mono text-[0.63rem] text-blue-500 tracking-[0.1em]">04</span>
+    <span class="w-10 h-px bg-white/[0.08]"></span>
+    <span class="font-mono text-[0.63rem] uppercase tracking-[0.22em] text-zinc-400">Contacto</span>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-10 sm:gap-14 items-center">
+
+    <!-- Copy -->
+    <div>
+      <h2 class="font-display text-[clamp(1.9rem,4vw,3.2rem)] font-bold leading-[1.1] tracking-tight text-zinc-100 mb-5">
+        ¿Querés modernizar<br/><em class="font-light">tu negocio?</em>
+      </h2>
+      <p class="text-zinc-400 text-[0.95rem] sm:text-[0.97rem] leading-relaxed max-w-md mb-6">
+        Disponible para consultoría, proyectos freelance y colaboraciones estratégicas.
+        Ya sea una web nueva, un sistema de gestión o la automatización de tus procesos,
+        hablemos.
+      </p>
+      <!-- Availability badge -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg
+           border border-green-500/20 bg-green-500/5">
+        <span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_#22c55e] animate-pulse"></span>
+        <span class="font-mono text-[0.65rem] text-green-400 tracking-wide">Disponible para nuevos proyectos</span>
+      </div>
+    </div>
+
+    <!-- Contact cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {contacts.map(c => (
+        <a
+          href={c.href}
+          target={c.target}
+          rel={c.target === '_blank' ? 'noopener noreferrer' : undefined}
+          class={`group flex items-center gap-3.5 px-4 py-4 rounded-xl
+                  border border-white/[0.07] bg-[#0e0e10]
+                  ${c.hoverBorder} transition-all duration-200`}
+        >
+          <div class={`w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-lg ${c.bg} ${c.text}`}>
+            <svg class="w-4 h-4" viewBox="0 0 24 24"
+              fill={c.fill ? 'currentColor' : 'none'}
+              stroke={c.fill ? 'none' : 'currentColor'}
+              stroke-width="2"
+              set:html={c.icon}
+            />
+          </div>
+          <div class="min-w-0">
+            <p class="font-mono text-[0.57rem] uppercase tracking-[0.1em] text-zinc-400 mb-0.5">{c.label}</p>
+            <p class="text-xs font-medium text-zinc-100 truncate">{c.value}</p>
+          </div>
+        </a>
+      ))}
+    </div>
+
+  </div>
+</section>

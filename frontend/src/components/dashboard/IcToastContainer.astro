@@ -1,0 +1,57 @@
+---
+// src/components/dashboard/IcToastContainer.astro
+// Contenedor de notificaciones toast — aria-live para accesibilidad.
+---
+
+<div id="ic-toast-container" class="ic-toast-container" aria-live="polite"></div>
+
+<style>
+  .ic-toast-container {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    pointer-events: none;
+  }
+
+  /* Todas las reglas .ic-toast-* se definen aquí y son globales
+     porque los elementos se insertan dinámicamente via JS. */
+  :global(.ic-toast) {
+    pointer-events: all;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    backdrop-filter: blur(12px);
+    max-width: 360px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+  :global(.ic-toast--success) { border-color: rgba(34, 197, 94, 0.3); }
+  :global(.ic-toast--error)   { border-color: rgba(239, 68, 68, 0.3); }
+  :global(.ic-toast--info)    { border-color: rgba(59, 130, 246, 0.3); }
+
+  :global(.ic-toast-icon)               { flex-shrink: 0; margin-top: 1px; }
+  :global(.ic-toast--success .ic-toast-icon) { color: var(--green); }
+  :global(.ic-toast--error   .ic-toast-icon) { color: var(--red); }
+  :global(.ic-toast--info    .ic-toast-icon) { color: var(--blue); }
+
+  :global(.ic-toast-msg)         { color: var(--text); }
+  :global(.ic-toast-msg strong)  { display: block; margin-bottom: 2px; }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  :global(@keyframes toastOut) {
+    to { opacity: 0; transform: translateX(20px); }
+  }
+</style>

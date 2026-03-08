@@ -1,0 +1,109 @@
+---
+const services = [
+  {
+    num: '01',
+    iconColor: 'blue',
+    title: 'ERP & Sistemas de Gestión',
+    desc:  'Diseño e implementación de sistemas integrales a medida con lógica de negocio compleja, alta integridad de datos y escalabilidad empresarial.',
+    icon: `<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+           <rect x="3" y="14" width="7" height="7" rx="1"/><path d="M17 14v7M14 17h7"/>`,
+    tags: ['FastAPI', 'PostgreSQL', 'Python'],
+  },
+  {
+    num: '02',
+    iconColor: 'violet',
+    title: 'Desarrollo Web Fullstack',
+    desc:  'Sitios y aplicaciones web modernas, rápidas y con diseño profesional. Desde landing pages hasta plataformas completas con panel de administración.',
+    icon: `<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>`,
+    tags: ['Astro', 'React', 'TypeScript'],
+  },
+  {
+    num: '03',
+    iconColor: 'green',
+    title: 'Automatización de Procesos',
+    desc:  'Eliminación de tareas manuales y redundantes mediante pipelines de datos, microservicios y workflows automatizados que optimizan tiempos y costos.',
+    icon: `<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>`,
+    tags: ['Polars', 'DuckDB', 'SMTP'],
+  },
+  {
+    num: '04',
+    iconColor: 'amber',
+    title: 'Transformación Digital',
+    desc:  'Estrategia y ejecución para modernizar la operación de tu empresa: migración de sistemas legados, integración de APIs y adopción de tecnologías actuales.',
+    icon: `<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>`,
+    tags: ['Consultoría', 'Arquitectura', 'DevOps'],
+  },
+];
+
+const colorMap: Record<string, string> = {
+  blue:   'text-blue-500   group-hover:text-blue-400',
+  violet: 'text-violet-500 group-hover:text-violet-400',
+  green:  'text-green-500  group-hover:text-green-400',
+  amber:  'text-amber-500  group-hover:text-amber-400',
+};
+
+const numMap: Record<string, string> = {
+  blue: 'text-blue-500', violet: 'text-violet-400', green: 'text-green-500', amber: 'text-amber-500',
+};
+---
+
+<section id="services" class="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-28 border-t border-white/[0.06]">
+
+  <!-- Eyebrow -->
+  <div class="section-eyebrow mb-10 sm:mb-14">
+    <span class="font-mono text-[0.63rem] text-blue-500 tracking-[0.1em]">02</span>
+    <span class="w-10 h-px bg-white/[0.08]"></span>
+    <span class="font-mono text-[0.63rem] uppercase tracking-[0.22em] text-zinc-400">Especialidades</span>
+  </div>
+
+  <!-- Intro -->
+  <div class="max-w-2xl mb-10">
+    <h2 class="font-display text-[clamp(1.75rem,3.5vw,2.9rem)] font-bold leading-[1.12] tracking-tight text-zinc-100 mb-4">
+      Soluciones para cada<br/><em class="font-light">etapa de tu crecimiento</em>
+    </h2>
+    <p class="text-zinc-500 text-sm leading-relaxed">
+      Combino experiencia fullstack con visión de negocio para entregar herramientas que generan
+      impacto real, sin importar el tamaño de tu empresa.
+    </p>
+  </div>
+
+  <!-- 2×2 grid -->
+  <div class="grid sm:grid-cols-2 border border-white/[0.07] rounded-2xl overflow-hidden
+       divide-y divide-white/[0.07] sm:divide-x sm:divide-y-0
+       [&>*:nth-child(n+3)]:border-t [&>*:nth-child(n+3)]:border-white/[0.07]">
+
+    {services.map((s) => (
+      <div
+        class="service-glow relative group p-7 sm:p-8 md:p-10 cursor-default overflow-hidden
+               bg-[#080809] hover:bg-[#0c0c0f] transition-colors duration-300"
+      >
+        <!-- Number + tags row -->
+        <div class="flex items-start justify-between mb-5">
+          <p class={`font-mono text-[0.57rem] tracking-[0.1em] ${numMap[s.iconColor]}`}>{s.num}</p>
+          <div class="flex flex-wrap gap-1 justify-end">
+            {s.tags.map(t => (
+              <span class="font-mono text-[0.54rem] px-1.5 py-0.5 rounded border border-white/[0.06] text-zinc-600">{t}</span>
+            ))}
+          </div>
+        </div>
+
+        <!-- Icon -->
+        <div class={`w-8 h-8 mb-4 transition-colors duration-300 ${colorMap[s.iconColor]}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-full h-full"
+            set:html={s.icon}
+          />
+        </div>
+
+        <!-- Text -->
+        <h5 class="font-display text-[1.15rem] sm:text-[1.2rem] font-bold italic text-zinc-100 mb-2 tracking-tight">
+          {s.title}
+        </h5>
+        <p class="text-xs text-zinc-500 leading-[1.85] mb-6">{s.desc}</p>
+
+        <!-- Arrow -->
+        <span class={`font-mono text-zinc-700 inline-block transition-all duration-300
+          group-hover:translate-x-1.5 ${colorMap[s.iconColor]}`}>→</span>
+      </div>
+    ))}
+  </div>
+</section>

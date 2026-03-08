@@ -1,0 +1,223 @@
+---
+// src/components/dashboard/IcAnalyticsPanel.astro
+// Panel de comparativa Norte Pampeano + botón de descarga CSV.
+---
+
+<section class="ic-panel ic-panel--analytics" aria-labelledby="analytics-heading">
+  <!-- Header -->
+  <div class="ic-panel-header">
+    <div class="ic-panel-icon ic-panel-icon--violet">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="18" y="3"  width="4" height="18"/>
+        <rect x="10" y="8"  width="4" height="13"/>
+        <rect x="2"  y="13" width="4" height="8"/>
+      </svg>
+    </div>
+    <h2 id="analytics-heading" class="ic-panel-title">Comparativa Norte Pampeano</h2>
+    <span class="ic-panel-badge">GET /analytics/comparativa</span>
+  </div>
+
+  <!-- Controls -->
+  <div class="ic-analytics-controls">
+    <select id="ic-producto-select" class="ic-select ic-select--sm">
+      <option value="NAFTA SUPER">Nafta Súper</option>
+      <option value="NAFTA PREMIUM">Nafta Premium</option>
+      <option value="GASOIL">Gasoil</option>
+      <option value="GASOIL PREMIUM">Gasoil Premium</option>
+    </select>
+    <button id="ic-analytics-btn" class="ic-btn ic-btn--ghost" disabled>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+      Consultar
+    </button>
+  </div>
+
+  <!-- Results -->
+  <div id="ic-analytics-container" class="ic-analytics-container">
+    <div class="ic-empty-state">
+      <span>Seleccioná un producto para ver la comparativa</span>
+    </div>
+  </div>
+
+  <!-- CSV Download -->
+  <div class="ic-download-section">
+    <div class="ic-download-info">
+      <p class="ic-download-label">Exportar datos industriales</p>
+      <p class="ic-download-desc">Descarga el CSV con los registros crudos del pipeline</p>
+    </div>
+    <button id="ic-download-btn" class="ic-btn ic-btn--download" disabled>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      <span id="ic-download-label">Descargar CSV</span>
+    </button>
+  </div>
+</section>
+
+<style>
+  /* ── Shared panel shell ── */
+  .ic-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--panel-pad);
+    display: flex; flex-direction: column; gap: 1rem;
+    position: relative; overflow: hidden;
+  }
+  .ic-panel::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.07), transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Panel header */
+  .ic-panel-header {
+    display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  }
+  .ic-panel-icon {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; flex-shrink: 0;
+  }
+  .ic-panel-icon--violet { background: var(--violet-dim); color: var(--violet); }
+  .ic-panel-title { font-size: 0.88rem; font-weight: 600; color: var(--text); margin: 0; flex: 1; }
+  .ic-panel-badge {
+    font-family: var(--font-mono); font-size: 0.58rem; color: var(--muted);
+    letter-spacing: 0.05em; padding: 0.15rem 0.5rem;
+    border-radius: 4px; border: 1px solid var(--border); background: var(--surface-2);
+  }
+
+  /* Controls */
+  .ic-analytics-controls { display: flex; gap: 0.6rem; align-items: center; }
+
+  .ic-select {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border-radius: 7px; border: 1px solid var(--border-2);
+    background: var(--surface-2); color: var(--text);
+    font-family: var(--font-body); font-size: 0.8rem;
+    outline: none; cursor: pointer; transition: border-color 0.2s;
+  }
+  .ic-select:focus    { border-color: rgba(59, 130, 246, 0.5); }
+  .ic-select--sm      { max-width: 180px; }
+  .ic-select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Buttons */
+  .ic-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 0.5rem; border-radius: 7px;
+    font-family: var(--font-body); font-size: 0.8rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; border: none; outline: none;
+  }
+  .ic-btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+  .ic-btn--ghost {
+    padding: 0.45rem 0.9rem;
+    background: transparent; color: var(--muted); border: 1px solid var(--border-2);
+  }
+  .ic-btn--ghost:hover:not(:disabled) {
+    border-color: var(--blue); color: var(--blue); background: var(--blue-dim);
+  }
+  .ic-btn--download {
+    padding: 0.55rem 1.1rem;
+    background: transparent; color: var(--text); border: 1px solid var(--border-2);
+    flex-shrink: 0;
+  }
+  .ic-btn--download:hover:not(:disabled) {
+    border-color: var(--green); color: var(--green); background: var(--green-dim);
+  }
+
+  :global(.ic-spinner) {
+    width: 13px; height: 13px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.7s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Analytics container */
+  .ic-analytics-container {
+    flex: 1; max-height: 200px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 0.35rem;
+  }
+
+  /* Analytics rows — inserted by JS, needs :global */
+  :global(.ic-analytics-row) {
+    display: grid;
+    grid-template-columns: 80px 1fr 70px 70px 70px;
+    gap: 0.5rem; align-items: center;
+    padding: 0.45rem 0.65rem; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--surface-2);
+    font-family: var(--font-mono); font-size: 0.65rem;
+  }
+  :global(.ic-analytics-header) {
+    display: grid;
+    grid-template-columns: 80px 1fr 70px 70px 70px;
+    gap: 0.5rem; padding: 0.3rem 0.65rem;
+    font-family: var(--font-mono); font-size: 0.58rem;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  :global(.ic-analytics-fecha)  { color: var(--muted); }
+  :global(.ic-analytics-loc)    { color: var(--text); font-weight: 500; }
+  :global(.ic-analytics-precio) { color: var(--amber); text-align: right; }
+  :global(.ic-analytics-nom)    { text-align: right; }
+  :global(.ic-analytics-pct)    { text-align: right; }
+  :global(.ic-positive)         { color: var(--red); }
+  :global(.ic-negative)         { color: var(--green); }
+  :global(.ic-neutral)          { color: var(--muted); }
+
+  /* Empty state */
+  .ic-empty-state {
+    display: flex; align-items: center; justify-content: center;
+    padding: 2rem 1rem; font-family: var(--font-mono); font-size: 0.7rem;
+    color: var(--muted); border-radius: 7px; border: 1px dashed var(--border);
+    text-align: center;
+  }
+
+  /* Download section */
+  .ic-download-section {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding-top: 0.75rem; border-top: 1px solid var(--border); margin-top: auto;
+  }
+  .ic-download-label { font-size: 0.8rem; font-weight: 500; color: var(--text); margin: 0; }
+  .ic-download-desc  { font-size: 0.7rem; color: var(--muted); margin: 2px 0 0; }
+
+  /* Scrollbar */
+  .ic-analytics-container::-webkit-scrollbar { width: 4px; }
+  .ic-analytics-container::-webkit-scrollbar-track { background: transparent; }
+  .ic-analytics-container::-webkit-scrollbar-thumb { background: var(--muted-2); border-radius: 4px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    :global(.ic-analytics-row),
+    :global(.ic-analytics-header) {
+      grid-template-columns: 72px 1fr 60px 60px;
+    }
+    :global(.ic-analytics-row    > :last-child),
+    :global(.ic-analytics-header > :last-child) { display: none; }
+
+    .ic-download-section { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    .ic-btn--download    { width: 100%; }
+    .ic-analytics-controls { flex-wrap: wrap; }
+    .ic-select--sm         { max-width: 100%; width: 100%; }
+    .ic-analytics-controls .ic-btn--ghost { width: 100%; }
+  }
+
+  @media (max-width: 560px) {
+    .ic-panel { padding: 1rem; }
+    .ic-panel-badge { display: none; }
+
+    :global(.ic-analytics-row),
+    :global(.ic-analytics-header) {
+      grid-template-columns: 68px 1fr 58px;
+    }
+    :global(.ic-analytics-row    > :nth-child(4)),
+    :global(.ic-analytics-row    > :nth-child(5)),
+    :global(.ic-analytics-header > :nth-child(4)),
+    :global(.ic-analytics-header > :nth-child(5)) { display: none; }
+  }
+</style>

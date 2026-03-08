@@ -15,12 +15,14 @@ logger = logging.getLogger("INDUSTRIAL_SERVER")
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="Portfolio Industrial La Pampa", version="1.5.0")
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:4321", "http://127.0.0.1:4321"], # El puerto de Astro
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -40,7 +42,7 @@ app.include_router(estaciones_de_servicio.router, prefix="/api/v1/surtidores", t
 app.include_router(industrial.router, prefix="/api/v1/industrial", tags=["Simulación Industrial"])
 app.include_router(email.router, prefix="/api/v1/comms", tags=["Comunicaciones"])
 
-@app.get("/health")
+@app.get("/api/v1/health", tags=["Sistema"])
 async def health_check():
     import os
     return {
@@ -53,7 +55,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "app:app", 
         host="0.0.0.0", 
-        port=8081, 
+        port=8000, 
         reload=True,
         log_level="info"
     )

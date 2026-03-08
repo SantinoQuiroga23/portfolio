@@ -1,0 +1,105 @@
+---
+---
+
+<section
+  id="hero"
+  class="relative min-h-screen flex items-center justify-center overflow-hidden"
+  style="background-color:#080809"
+>
+  <!-- Orbs + grid -->
+  <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+    <div class="absolute rounded-full blur-[90px] will-change-transform animate-drift-a
+         w-[58vw] h-[58vw] -top-[20%] -left-[18%]
+         bg-[radial-gradient(circle,rgba(59,130,246,0.15)_0%,transparent_70%)]"></div>
+    <div class="absolute rounded-full blur-[90px] will-change-transform animate-drift-b
+         w-[44vw] h-[44vw] -bottom-[15%] -right-[10%]
+         bg-[radial-gradient(circle,rgba(96,165,250,0.11)_0%,transparent_70%)]"></div>
+    <div class="absolute rounded-full blur-[90px] will-change-transform animate-drift-c
+         w-[28vw] h-[28vw] top-[40%] left-[55%]
+         bg-[radial-gradient(circle,rgba(29,78,216,0.09)_0%,transparent_70%)]"></div>
+    <div class="absolute inset-0 grid-lines"></div>
+  </div>
+
+  <!-- Content -->
+  <div class="relative z-10 text-center max-w-4xl px-4 sm:px-6 flex flex-col items-center gap-5 sm:gap-6 pt-14">
+
+    <!-- Eyebrow -->
+    <div
+      class="reveal flex items-center gap-3 sm:gap-4 font-mono text-[0.6rem] sm:text-[0.64rem]
+             tracking-[0.22em] sm:tracking-[0.28em] uppercase text-blue-400"
+      style="--d:0s"
+    >
+      <span class="hidden sm:inline-block w-7 h-px bg-blue-500"></span>
+      Desarrollador Fullstack &amp; Arquitecto de Software
+      <span class="hidden sm:inline-block w-7 h-px bg-blue-500"></span>
+    </div>
+
+    <!-- Name -->
+    <h1 class="reveal font-display leading-[0.9] tracking-tight" style="--d:0.15s">
+      <span class="block text-[clamp(3rem,10.5vw,8rem)] font-black text-white">Santino</span>
+      <span id="name-last" class="block text-[clamp(3rem,10.5vw,8rem)] font-light italic">Quiroga</span>
+    </h1>
+
+    <!-- Tagline -->
+    <p
+      class="reveal max-w-[540px] text-[clamp(0.88rem,1.7vw,1.1rem)] leading-[1.85] font-light text-zinc-400"
+      style="--d:0.3s"
+    >
+      Impulso la
+      <strong class="text-[#f0f0f2] font-medium">modernización e innovación</strong>
+      de empresas a través de soluciones digitales a medida: desde sistemas ERP hasta
+      <strong class="text-[#f0f0f2] font-medium">páginas web</strong>
+      y automatización de procesos.
+    </p>
+
+    <!-- Badges -->
+    <div class="reveal flex flex-wrap gap-2 justify-center" style="--d:0.42s">
+      {['FastAPI', 'Astro', 'TypeScript', 'PostgreSQL', 'Python'].map(tag => (
+        <span
+          class="font-mono text-[0.58rem] px-2.5 py-1 rounded-full
+                 border border-white/[0.08] text-zinc-500
+                 bg-white/[0.03] tracking-widest"
+        >
+          {tag}
+        </span>
+      ))}
+    </div>
+
+    <!-- CTAs -->
+    <div class="reveal flex flex-wrap gap-3 justify-center" style="--d:0.54s">
+      <a
+        href="#about"
+        class="px-5 sm:px-6 py-2.5 bg-blue-500 hover:bg-blue-400 text-white rounded
+               text-xs font-medium tracking-wide transition-all duration-200
+               hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(59,130,246,0.35)]"
+      >
+        Ver perfil
+      </a>
+      <a
+        href="#contact"
+        class="px-5 sm:px-6 py-2.5 border border-white/20 text-zinc-300
+               hover:border-blue-400 hover:text-white rounded text-xs font-medium tracking-wide
+               transition-all duration-200 hover:-translate-y-0.5"
+      >
+        Trabajemos juntos
+      </a>
+    </div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div
+    class="reveal absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30"
+    style="--d:0.8s"
+    aria-hidden="true"
+  >
+    <div class="w-px h-12 bg-gradient-to-b from-transparent to-zinc-400 animate-scroll-pulse origin-top"></div>
+    <span class="font-mono text-[0.55rem] tracking-[0.25em] uppercase text-zinc-400">scroll</span>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.reveal').forEach(el => {
+    const d = el.style.getPropertyValue('--d') || '0s';
+    el.style.animation = `revealUp 0.85s cubic-bezier(0.16,1,0.3,1) ${d} forwards`;
+  });
+</script>

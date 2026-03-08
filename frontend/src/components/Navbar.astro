@@ -1,0 +1,112 @@
+---
+const links = [
+  { href: '#about',     label: 'Enfoque'    },
+  { href: '#services',  label: 'Servicios'  },
+  { href: '#dashboard', label: 'Dashboard'  },
+  { href: '#contact',   label: 'Contacto'   },
+];
+---
+
+<nav
+  class="fixed top-0 inset-x-0 z-50 h-14 flex items-center justify-between
+         px-4 sm:px-6 md:px-12
+         bg-[#080809]/90 border-b border-white/[0.06] backdrop-blur-md"
+>
+  <a href="#hero" class="font-display font-bold text-base tracking-tight text-zinc-100">
+    SQ<span class="text-blue-500">.</span>
+  </a>
+
+  <div class="hidden md:flex items-center gap-8">
+    {links.map(l => (
+      <a
+        href={l.href}
+        class="nav-link font-mono text-[0.63rem] uppercase tracking-[0.2em] text-zinc-500 hover:text-zinc-100 transition-colors"
+      >
+        {l.label}
+      </a>
+    ))}
+  </div>
+
+  <button
+    id="mobile-menu-btn"
+    aria-label="Abrir menú"
+    aria-expanded="false"
+    class="md:hidden w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-zinc-100 transition-colors focus:outline-none"
+  >
+    <svg id="icon-menu" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+    <svg id="icon-close" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="18" y1="6" x2="6" y2="18"/>
+      <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+</nav>
+
+<div
+  id="mobile-menu"
+  class="mobile-menu-container fixed top-14 inset-x-0 z-40
+         bg-[#080809]/95 border-b border-white/[0.06] backdrop-blur-md
+         md:hidden"
+>
+  {links.map(l => (
+    <a
+      href={l.href}
+      class="mob-link block px-6 py-4 font-mono text-[0.7rem] uppercase tracking-[0.2em]
+             text-zinc-400 border-b border-white/[0.04]
+             hover:text-zinc-100 hover:bg-white/[0.03] transition-colors last:border-0"
+    >
+      {l.label}
+    </a>
+  ))}
+</div>
+
+<style>
+  /* Controlamos el estado del menú con CSS puro para evitar saltos visuales */
+  .mobile-menu-container {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .mobile-menu-container.open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+</style>
+
+<script>
+  // Usamos una función para encapsular y evitar problemas de scope en Astro
+  const initMenu = () => {
+    const menuBtn    = document.getElementById('mobile-menu-btn') as HTMLButtonElement | null;
+    const mobileMenu = document.getElementById('mobile-menu')     as HTMLElement       | null;
+    const iconMenu   = document.getElementById('icon-menu')       as HTMLElement       | null;
+    const iconClose  = document.getElementById('icon-close')      as HTMLElement       | null;
+
+    if (!menuBtn || !mobileMenu) return;
+
+    const toggleMenu = (forceClose = false) => {
+      const isOpening = forceClose ? false : !mobileMenu.classList.contains('open');
+      
+      mobileMenu.classList.toggle('open', isOpening);
+      iconMenu?.classList.toggle('hidden', isOpening);
+      iconClose?.classList.toggle('hidden', !isOpening);
+      menuBtn.setAttribute('aria-expanded', isOpening.toString());
+    };
+
+    menuBtn.addEventListener('click', () => toggleMenu());
+
+    // Cerrar al hacer click en un link
+    document.querySelectorAll('.mob-link').forEach(link => {
+      link.addEventListener('click', () => toggleMenu(true));
+    });
+  };
+
+  // Ejecutar al cargar (y compatible con ViewTransitions de Astro si los usas)
+  initMenu();
+  document.addEventListener('astro:after-swap', initMenu);
+</script>
