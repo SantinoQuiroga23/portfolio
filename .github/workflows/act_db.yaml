@@ -1,7 +1,7 @@
 name: Update Fuel Database
 on:
   schedule:
-    - cron: '0 */2 * * *' 
+    - cron: '0 6 * * *' 
   workflow_dispatch:
 
 permissions:
