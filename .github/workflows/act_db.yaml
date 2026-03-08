@@ -1,0 +1,28 @@
+name: Update Fuel Database
+on:
+  schedule:
+    - cron: '0 */2 * * *' 
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Deps
+        run: pip install polars httpx
+      - name: Run Script
+        run: python backend/scripts/generar_db.py
+      - name: Commit & Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add backend/data/surtidores.db
+          git commit -m "chore: auto-update prices [skip ci]" || exit 0
+          git push
